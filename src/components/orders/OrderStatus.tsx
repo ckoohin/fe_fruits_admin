@@ -1,6 +1,6 @@
 import React from 'react';
 
-export type OrderStatusType = 'pending' | 'confirmed' | 'processing' | 'shipping' | 'delivered' | 'cancelled';
+export type OrderStatusType = 'pending' | 'confirmed' | 'processing' | 'shipped'| 'completed'| 'cancelled';
 export type PaymentStatusType = 'pending' | 'paid' | 'failed' | 'refunded';
 
 interface OrderStatusProps {
@@ -12,8 +12,8 @@ const ORDER_STATUS_CONFIG: Record<OrderStatusType, { label: string; className: s
   pending: { label: 'Chờ xác nhận', className: 'bg-yellow-100 text-yellow-800' },
   confirmed: { label: 'Đã xác nhận', className: 'bg-blue-100 text-blue-800' },
   processing: { label: 'Đang xử lý', className: 'bg-indigo-100 text-indigo-800' },
-  shipping: { label: 'Đang giao', className: 'bg-purple-100 text-purple-800' },
-  delivered: { label: 'Đã giao', className: 'bg-green-100 text-green-800' },
+  shipped: { label: 'Đang giao', className: 'bg-purple-100 text-purple-800' },
+  completed: { label: 'Đã giao', className: 'bg-green-100 text-green-800' },
   cancelled: { label: 'Đã hủy', className: 'bg-red-100 text-red-800' },
 };
 

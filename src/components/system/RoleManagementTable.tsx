@@ -22,7 +22,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alertDialog';
 import { Badge } from '@/components/ui/Badge';
-import { useToast } from '@/hooks/useToast';
+import toast from 'react-hot-toast';
 import { Role } from '@/types/role';
 
 interface RoleManagementTableProps {
@@ -31,7 +31,7 @@ interface RoleManagementTableProps {
   canDelete: boolean;
   canManagePermissions: boolean;
   onEdit: (role: Role) => void;
-  onDelete: (roleId: number) => void;
+  onDelete: (roleId: string) => void;
   onManagePermissions: (role: Role) => void;
   onRefresh: () => void;
 }
@@ -46,25 +46,17 @@ export function RoleManagementTable({
   onManagePermissions,
   onRefresh,
 }: RoleManagementTableProps) {
-  const [deleteRoleId, setDeleteRoleId] = useState<number | null>(null);
-  const { toast } = useToast();
+  const [deleteRoleId, setDeleteRoleId] = useState<string | null>(null);
 
   const handleDeleteConfirm = async () => {
     if (!deleteRoleId) return;
 
     try {
       await onDelete(deleteRoleId);
-      toast({
-        title: 'Thành công',
-        description: 'Đã xóa vai trò thành công',
-      });
+      toast.success('Đã xóa vai trò thành công!');
       onRefresh();
     } catch (error) {
-      toast({
-        title: 'Lỗi',
-        description: 'Không thể xóa vai trò',
-        variant: 'destructive',
-      });
+      toast.error('Không thể xóa vai trò');
     } finally {
       setDeleteRoleId(null);
     }
@@ -105,7 +97,7 @@ export function RoleManagementTable({
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Badge variant="outline">{role.slug}</Badge>
+                    <Badge variant="secondary">{role.slug}</Badge>
                   </TableCell>
                   <TableCell>{role.description || '-'}</TableCell>
                   <TableCell>
@@ -120,7 +112,7 @@ export function RoleManagementTable({
                         {canManagePermissions && (
                           <Button
                             variant="ghost"
-                            size="icon"
+                            size="md"
                             onClick={() => onManagePermissions(role)}
                             title="Quản lý quyền"
                           >
@@ -130,7 +122,7 @@ export function RoleManagementTable({
                         {canEdit && (
                           <Button
                             variant="ghost"
-                            size="icon"
+                            size="md"
                             onClick={() => onEdit(role)}
                           >
                             <Pencil className="h-4 w-4" />
@@ -139,7 +131,7 @@ export function RoleManagementTable({
                         {canDelete && (
                           <Button
                             variant="ghost"
-                            size="icon"
+                            size="md"
                             onClick={() => setDeleteRoleId(role.id)}
                           >
                             <Trash2 className="h-4 w-4 text-red-500" />

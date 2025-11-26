@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { ApiHelper } from '@/utils/api';
 import { AuthUtils } from '@/utils/auth';
 import { Branch, CreateBranchRequest } from '@/types/branch';
+import toast from 'react-hot-toast';
 
 declare global {
   interface Window {
@@ -18,7 +19,6 @@ export function useBranches() {
   const [xlsxLoaded, setXlsxLoaded] = useState(false);
   const itemsPerPage = 10;
 
-  // Load XLSX
   useEffect(() => {
     if (typeof window !== 'undefined' && !window.XLSX) {
       const script = document.createElement('script');
@@ -34,7 +34,7 @@ export function useBranches() {
     setLoading(true);
     try {
       if (!AuthUtils.isAuthenticated()) {
-        alert('Vui lòng đăng nhập');
+        toast.error('Vui lòng đăng nhập');
         window.location.href = '/login';
         return;
       }
@@ -42,10 +42,10 @@ export function useBranches() {
       if (response.success && response.data) {
         setBranches(Array.isArray(response.data) ? response.data : []);
       } else {
-        alert(response.message || 'Không thể tải dữ liệu');
+        toast.error(response.message || 'Không thể tải dữ liệu');
       }
     } catch (error) {
-      alert('Lỗi khi tải danh sách chi nhánh');
+      toast.error('Lỗi khi tải danh sách chi nhánh');
     } finally {
       setLoading(false);
     }
@@ -56,13 +56,13 @@ export function useBranches() {
     try {
       const response = await ApiHelper.delete(`api/v1/branches/${branch.id}`);
       if (response.success) {
-        alert('Xóa thành công!');
+        toast.success('Xóa thành công!');
         fetchBranches();
       } else {
-        alert('Lỗi: ' + response.message);
+        toast.error('Lỗi: ' + response.message);
       }
     } catch (error: any) {
-      alert('Lỗi: ' + error.message);
+      toast.error('Lỗi: ' + error.message);
     }
   };
 
@@ -70,14 +70,14 @@ export function useBranches() {
     try {
       const response = await ApiHelper.post('api/v1/branches', data);
       if (response.success) {
-        alert('Thêm thành công!');
+        toast.success('Thêm thành công!');
         fetchBranches();
         return true;
       }
-      alert('Lỗi: ' + response.message);
+      toast.error('Lỗi: ' + response.message);
       return false;
     } catch (error: any) {
-      alert('Lỗi: ' + error.message);
+      toast.error('Lỗi: ' + error.message);
       return false;
     }
   };
@@ -92,22 +92,21 @@ export function useBranches() {
       
       const response = await ApiHelper.patch(`api/v1/branches/${id}`, updateData);
       if (response.success) {
-        alert('Cập nhật thành công!');
+        toast.success('Cập nhật thành công!');
         fetchBranches();
         return true;
       }
-      alert('Lỗi: ' + response.message);
+      toast.error('Lỗi: ' + response.message);
       return false;
     } catch (error: any) {
-      alert('Lỗi: ' + error.message);
+      toast.error('Lỗi: ' + error.message);
       return false;
     }
   };
 
-  // Excel Export
   const handleExportExcel = () => {
     if (!window.XLSX) {
-      alert('Đang tải thư viện...');
+      toast.loading('Đang tải thư viện...');
       return;
     }
     const exportData = filteredBranches.map(branch => ({
@@ -130,7 +129,6 @@ export function useBranches() {
     window.XLSX.writeFile(wb, `chi-nhanh_${new Date().toISOString().split('T')[0]}.xlsx`);
   };
 
-  // Excel Import
   const handleImportExcel = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !window.XLSX) return;
@@ -143,7 +141,7 @@ export function useBranches() {
         const jsonData = window.XLSX.utils.sheet_to_json(ws);
         
         if (jsonData.length === 0) {
-          alert('File trống');
+          toast.error('File trống');
           return;
         }
 
@@ -168,14 +166,13 @@ export function useBranches() {
         alert(`Thành công: ${success}\nThất bại: ${error}`);
         fetchBranches();
       } catch (error) {
-        alert('Lỗi đọc file');
+        toast.error('Lỗi đọc file');
       }
     };
     reader.readAsBinaryString(file);
     e.target.value = '';
   };
 
-  // Filter
   const filteredBranches = branches.filter(branch => {
     const query = searchQuery.toLowerCase().trim();
     if (!query) return true;
@@ -185,8 +182,6 @@ export function useBranches() {
     );
   });
   
-
-  // Pagination
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentBranches = filteredBranches.slice(indexOfFirstItem, indexOfLastItem);

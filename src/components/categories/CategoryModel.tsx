@@ -10,7 +10,7 @@ interface CategoryModalProps {
   onClose: () => void;
   onSubmit: (e: React.FormEvent) => void;
   onInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => void;
-  onImageChange: (url: string | string[]) => void; // ← Thêm prop này
+  onImageChange: (url: string | string[]) => void; 
 }
 
 export default function CategoryModal({
@@ -70,7 +70,6 @@ export default function CategoryModal({
         </div>
         
         <form onSubmit={onSubmit} className="space-y-4">
-          {/* Tên danh mục */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Tên danh mục <span className="text-red-500">*</span>
@@ -86,7 +85,6 @@ export default function CategoryModal({
             />
           </div>
 
-          {/* Slug */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Slug <span className="text-red-500">*</span>
@@ -105,7 +103,6 @@ export default function CategoryModal({
             </p>
           </div>
 
-          {/* Danh mục cha */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Danh mục cha
@@ -127,7 +124,6 @@ export default function CategoryModal({
             </select>
           </div>
 
-          {/* Mô tả */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Mô tả
@@ -142,7 +138,6 @@ export default function CategoryModal({
             />
           </div>
 
-          {/* ✨ THAY ĐỔI: Dùng ImageUpload component thay vì input URL */}
           <div>
             <ImageUpload
               value={formData.image || ''}
@@ -153,7 +148,6 @@ export default function CategoryModal({
             />
           </div>
 
-          {/* Thứ tự */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Thứ tự sắp xếp
@@ -170,7 +164,6 @@ export default function CategoryModal({
             <p className="mt-1 text-xs text-gray-500">Số nhỏ hơn sẽ hiển thị trước</p>
           </div>
 
-          {/* Checkbox active */}
           <div className="flex items-center">
             <input
               type="checkbox"
@@ -185,7 +178,6 @@ export default function CategoryModal({
             </label>
           </div>
 
-          {/* Buttons */}
           <div className="flex space-x-3 pt-4 border-t">
             <button
               type="button"

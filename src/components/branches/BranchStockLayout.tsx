@@ -80,7 +80,6 @@ export default function BranchStockHeader({
   );
 }
 
-// BranchStockTable Component (Không thay đổi)
 interface BranchStockTableProps {
   branchStock: BranchStock[];
   loading: boolean;

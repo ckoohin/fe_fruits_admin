@@ -146,7 +146,7 @@ export default function ImageUpload({
                   alt={`Preview ${index + 1}`}
                   className="w-full h-full object-contain hover:scale-105 transition-transform duration-200"
                   onError={(e) => {
-                    e.currentTarget.src = '/placeholder-image.png';
+                    e.currentTarget.src = 'https://via.placeholder.com/150x150.png?text=No+Image';
                   }}
                 />
               </div>

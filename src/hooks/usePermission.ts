@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { Permission, CreatePermissionRequest } from '@/types/permission';
 import { AuthUtils } from '@/utils/auth';
 import { ApiHelper } from '@/utils/api';
+import toast from 'react-hot-toast';
 
 declare global {
   interface Window {
@@ -10,10 +11,6 @@ declare global {
   }
 }
 
-/**
- * Hook để quản lý TẤT CẢ permissions (trang admin)
- * Không phụ thuộc vào roleId của user
- */
 export function usePermissions() {
   const [permissions, setPermissions] = useState<Permission[]>([]);
   const [loading, setLoading] = useState(true);
@@ -37,65 +34,58 @@ export function usePermissions() {
     setLoading(true);
     try {
       if (!AuthUtils.isAuthenticated()) {
-        alert('Vui lòng đăng nhập');
+        toast.error('Vui lòng đăng nhập');
         window.location.href = '/login';
         return;
       }
 
-      // ✅ Lấy TẤT CẢ permissions để quản lý (không theo roleId)
-      console.log('🔄 Fetching ALL permissions for management...');
       const response = await ApiHelper.get<Permission[]>('api/v1/permissions');
       
       if (response.success && response.data) {
-        console.log('✅ All permissions loaded:', response.data.length, 'items');
+        console.log('All permissions loaded:', response.data.length, 'items');
         setPermissions(Array.isArray(response.data) ? response.data : []);
       } else {
-        alert(response.message || 'Không thể tải dữ liệu quyền');
+        toast.error(response.message || 'Không thể tải dữ liệu quyền');
       }
     } catch (error) {
       console.error('Error fetching permissions:', error);
-      alert('Lỗi khi tải quyền');
+      toast.error('Lỗi khi tải quyền');
     } finally {
       setLoading(false);
     }
   };
 
-  const deletePermission = async (permission: Permission) => {
-    if (!permission || !permission.id) {
-      alert('Dữ liệu quyền không hợp lệ');
+  const deletePermission = async (permissionId: number) => {
+    if (!permissionId) {
+      toast.error("ID quyền không hợp lệ");
       return;
     }
-    
-    if (!confirm(`Bạn có chắc muốn xóa quyền "${permission.name}"?`)) return;
 
     try {
-      const response = await ApiHelper.delete(`api/v1/permissions/${permission.id}`);
+      const response = await ApiHelper.delete(`api/v1/permissions/${permissionId}`);
       if (response.success) {
-        alert('Xóa quyền thành công!');
+        toast.success("Xóa quyền thành công!");
         fetchPermissions();
       } else {
-        alert('Lỗi: ' + (response.message || 'Không thể xóa quyền'));
+        toast.error(response.message || "Không thể xóa quyền");
       }
     } catch (error: any) {
-      console.error('Delete error:', error);
-      alert('Lỗi: ' + error.message);
+      console.error("Delete error:", error);
+      toast.error("Lỗi: " + error.message);
     }
   };
 
   const createPermission = async (data: CreatePermissionRequest) => {
     try {
-      console.log('=== CREATE PERMISSION ===');
-      console.log('Data:', data);
-
       const response = await ApiHelper.post('api/v1/permissions', data);
 
       if (response.success) {
-        alert('Thêm quyền thành công!');
+        toast.success('Thêm quyền thành công!');
         fetchPermissions();
         return true;
       }
 
-      alert('Lỗi: ' + (response.message || 'Không thể lưu quyền'));
+      toast.error('Lỗi: ' + (response.message || 'Không thể lưu quyền'));
       return false;
     } catch (error: any) {
       console.error('Create error:', error);
@@ -106,9 +96,9 @@ export function usePermissions() {
         rawError.includes('duplicate key value') ||
         rawError.includes('permissions_slug_key')
       ) {
-        alert('Lỗi: Slug này đã tồn tại. Vui lòng nhập slug khác!');
+        toast.error('Lỗi: Slug này đã tồn tại. Vui lòng nhập slug khác!');
       } else {
-        alert('Lỗi: ' + rawError);
+        toast.error('Lỗi: ' + rawError);
       }
 
       return false;
@@ -122,28 +112,24 @@ export function usePermissions() {
         slug: data.slug,
         description: data.description
       }; 
-      console.log('=== UPDATE PERMISSION ===');
-      console.log('ID:', id);
-      console.log('Data:', updateData);
-      
       const response = await ApiHelper.patch(`api/v1/permissions/${id}`, updateData);
       if (response.success) {
-        alert('Cập nhật thành công!');
+        toast.success('Cập nhật thành công!');
         fetchPermissions();
         return true;
       }
-      alert('Lỗi: ' + (response.message || 'Không thể cập nhật quyền'));
+      toast.error('Lỗi: ' + (response.message || 'Không thể cập nhật quyền'));
       return false;
     } catch (error: any) {
       console.error('Update error:', error);
-      alert('Lỗi: ' + error.message);
+      toast.error('Lỗi: ' + error.message);
       return false;
     }
   };
 
   const handleExportExcel = () => {
     if (!window.XLSX) {
-      alert('Đang tải thư viện Excel, vui lòng thử lại sau giây lát...');
+      toast.loading('Đang tải thư viện Excel, vui lòng thử lại sau giây lát...');
       return;
     }
 
@@ -179,7 +165,7 @@ export function usePermissions() {
     if (!file) return;
 
     if (!window.XLSX) {
-      alert('Đang tải thư viện Excel, vui lòng thử lại sau giây lát...');
+      toast.loading('Đang tải thư viện Excel, vui lòng thử lại sau giây lát...');
       return;
     }
 
@@ -192,7 +178,7 @@ export function usePermissions() {
         const jsonData = window.XLSX.utils.sheet_to_json(firstSheet);
         
         if (jsonData.length === 0) {
-          alert('File Excel trống hoặc không có dữ liệu');
+          toast.error('File Excel trống hoặc không có dữ liệu');
           return;
         }
         
@@ -224,12 +210,12 @@ export function usePermissions() {
           }
         }
 
-        alert(`Import hoàn tất!\nThành công: ${successCount}\nThất bại: ${errorCount}`);
+        toast.success(`Import hoàn tất!\nThành công: ${successCount}\nThất bại: ${errorCount}`);
         fetchPermissions();
 
       } catch (error) {
         console.error('Error importing file:', error);
-        alert('Lỗi khi đọc file Excel. Vui lòng kiểm tra lại định dạng file.');
+        toast.error('Lỗi khi đọc file Excel. Vui lòng kiểm tra lại định dạng file.');
       }
     };
     

@@ -33,7 +33,6 @@ export default function UsersPage() {
     setStatusFilter,
     pagination,
     setPage,
-    limit,
     canViewUsers,
     fetchUsers,
   } = useUsers();
@@ -52,8 +51,7 @@ export default function UsersPage() {
   }
 
   return (
-    <div className="container mx-auto space-y-4">
-      {/* --- Bộ lọc --- */}
+    <div className="container mx-auto space-y-6 py-6">
       <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-5 rounded-lg shadow-sm">
         <div className="relative w-full md:w-1/3">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 h-4 w-4" />
@@ -67,25 +65,6 @@ export default function UsersPage() {
         </div>
 
         <div className="flex flex-wrap gap-2">
-          {/* --- Lọc theo vai trò --- */}
-          <Select
-            value={roleFilter?.toString() || 'all'}
-            onValueChange={(val) => setRoleFilter(val === 'all' ? undefined : Number(val))}
-          >
-            <SelectTrigger className="w-[160px] bg-gray-100 border border-gray-300 text-gray-700 rounded-lg">
-              <SelectValue placeholder="Lọc theo vai trò" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Tất cả vai trò</SelectItem>
-              {roles.map((role) => (
-                <SelectItem key={role.id} value={role.id.toString()}>
-                  {role.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          {/* --- Lọc theo trạng thái --- */}
           <Select
             value={statusFilter || 'all'}
             onValueChange={(val) => setStatusFilter(val === 'all' ? undefined : val)}
@@ -102,24 +81,23 @@ export default function UsersPage() {
         </div>
       </div>
 
-      {/* --- Danh sách người dùng --- */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
+      <Card className="border-0 shadow-sm">
+        <CardHeader className="flex flex-row items-center justify-between pb-4">
           <div>
-            <CardTitle>Danh sách người dùng</CardTitle>
+            <CardTitle className="text-xl">Danh sách người dùng</CardTitle>
             <CardDescription>
-              Tổng số: {pagination.total} người dùng
+              Tổng cộng: <strong>{pagination.total}</strong> người dùng
             </CardDescription>
           </div>
-          <Button variant="outline" onClick={() => fetchUsers()}>
+          <Button variant="outline" size="sm" onClick={fetchUsers}>
             Làm mới
           </Button>
         </CardHeader>
 
-        <CardContent>
+        <CardContent className="p-0">
           {loading ? (
-            <div className="flex justify-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+            <div className="flex justify-center py-12">
+              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
             </div>
           ) : (
             <UserManagementTable

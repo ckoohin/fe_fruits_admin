@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { Export, ExportStatus, KanbanColumn, CreateExportRequest, CancelExportRequest, ReviewBranchRequest, ReviewWarehouseRequest } from '@/types/export';
 import { ExportService } from '@/services/exportService';
 import { AuthUtils } from '@/utils/auth';
+import toast from 'react-hot-toast';
 
 export const KANBAN_COLUMNS: KanbanColumn[] = [
   {
@@ -51,30 +52,37 @@ export const KANBAN_COLUMNS: KanbanColumn[] = [
 
 export function useExports() {
   const [exports, setExports] = useState<Export[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true);  
+  const [searchQuery, setSearchQuery] = useState('');    
   const [selectedExport, setSelectedExport] = useState<Export | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
 
-  const fetchExports = async () => {
+  const fetchExports = async (page: number = 1) => {
     setLoading(true);
     try {
       if (!AuthUtils.isAuthenticated()) {
-        alert('Vui lòng đăng nhập');
+        toast.error('Vui lòng đăng nhập');
         window.location.href = '/login';
         return;
       }
-      
-      const response = await ExportService.getAll(1, 100);
-      
+
+      const response = await ExportService.getAll({
+        page,
+        limit: 10,           
+        search: searchQuery, 
+      });
+
       if (response.success && response.data) {
-        setExports(Array.isArray(response.data) ? response.data : []);
+        setExports(response.data.items);
       } else {
-        alert(response.message || 'Không thể tải dữ liệu phiếu xuất');
+        toast.error(response.message || 'Không thể tải dữ liệu phiếu xuất');
+        setExports([]);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching exports:', error);
-      alert('Lỗi khi tải phiếu xuất');
+      toast.error(error.message || 'Lỗi kết nối server');
+      setExports([]);
     } finally {
       setLoading(false);
     }
@@ -97,15 +105,15 @@ export function useExports() {
     try {
       const response = await ExportService.requestTransfer(data);
       if (response.success) {
-        alert('Tạo yêu cầu chuyển kho thành công!');
+        toast.success('Tạo yêu cầu chuyển kho thành công!');
         fetchExports();
         return true;
       }
-      alert('Lỗi: ' + (response.message || 'Không thể tạo yêu cầu chuyển kho'));
+      toast.error('Lỗi: ' + (response.message || 'Không thể tạo yêu cầu chuyển kho'));
       return false;
     } catch (error: any) {
       console.error('Request transfer error:', error);
-      alert('Lỗi: ' + error.message);
+      toast.error('Lỗi: ' + error.message);
       return false;
     }
   };
@@ -114,15 +122,15 @@ export function useExports() {
     try {
       const response = await ExportService.reviewBranch(id, data);
       if (response.success) {
-        alert(`Duyệt yêu cầu chi nhánh ${data.action === 'approve' ? 'thành công' : 'bị từ chối'}!`);
+        toast.success(`Duyệt yêu cầu chi nhánh ${data.action === 'approve' ? 'thành công' : 'bị từ chối'}!`);
         fetchExports();
         return true;
       }
-      alert('Lỗi: ' + (response.message || 'Không thể duyệt yêu cầu chi nhánh'));
+      toast.error('Lỗi: ' + (response.message || 'Không thể duyệt yêu cầu chi nhánh'));
       return false;
     } catch (error: any) {
       console.error('Review branch error:', error);
-      alert('Lỗi: ' + error.message);
+      toast.error('Lỗi: ' + error.message);
       return false;
     }
   };
@@ -131,15 +139,15 @@ export function useExports() {
     try {
       const response = await ExportService.reviewWarehouse(id, data);
       if (response.success) {
-        alert(`Duyệt kho tổng ${data.action === 'approve' ? 'thành công' : 'bị từ chối'}!`);
+        toast.success(`Duyệt kho tổng ${data.action === 'approve' ? 'thành công' : 'bị từ chối'}!`);
         fetchExports();
         return true;
       }
-      alert('Lỗi: ' + (response.message || 'Không thể duyệt kho tổng'));
+      toast.error('Lỗi: ' + (response.message || 'Không thể duyệt kho tổng'));
       return false;
     } catch (error: any) {
       console.error('Review warehouse error:', error);
-      alert('Lỗi: ' + error.message);
+      toast.error('Lỗi: ' + error.message);
       return false;
     }
   };
@@ -148,15 +156,15 @@ export function useExports() {
     try {
       const response = await ExportService.shipTransfer(id);
       if (response.success) {
-        alert('Xác nhận gửi hàng thành công!');
+        toast.success('Xác nhận gửi hàng thành công!');
         fetchExports();
         return true;
       }
-      alert('Lỗi: ' + (response.message || 'Không thể xác nhận gửi hàng'));
+      toast.error('Lỗi: ' + (response.message || 'Không thể xác nhận gửi hàng'));
       return false;
     } catch (error: any) {
       console.error('Ship transfer error:', error);
-      alert('Lỗi: ' + error.message);
+      toast.error('Lỗi: ' + error.message);
       return false;
     }
   };
@@ -165,15 +173,15 @@ export function useExports() {
     try {
       const response = await ExportService.receiveTransfer(id);
       if (response.success) {
-        alert('Xác nhận nhận hàng thành công!');
+        toast.success('Xác nhận nhận hàng thành công!');
         fetchExports();
         return true;
       }
-      alert('Lỗi: ' + (response.message || 'Không thể xác nhận nhận hàng'));
+      toast.error('Lỗi: ' + (response.message || 'Không thể xác nhận nhận hàng'));
       return false;
     } catch (error: any) {
       console.error('Receive transfer error:', error);
-      alert('Lỗi: ' + error.message);
+      toast.error('Lỗi: ' + error.message);
       return false;
     }
   };
@@ -182,15 +190,15 @@ export function useExports() {
     try {
       const response = await ExportService.cancelExport(id, data);
       if (response.success) {
-        alert('Hủy yêu cầu chuyển kho thành công!');
+        toast.success('Hủy yêu cầu chuyển kho thành công!');
         fetchExports();
         return true;
       }
-      alert('Lỗi: ' + (response.message || 'Không thể hủy yêu cầu chuyển kho'));
+      toast.error('Lỗi: ' + (response.message || 'Không thể hủy yêu cầu chuyển kho'));
       return false;
     } catch (error: any) {
       console.error('Cancel error:', error);
-      alert('Lỗi: ' + error.message);
+      toast.error('Lỗi: ' + error.message);
       return false;
     }
   };

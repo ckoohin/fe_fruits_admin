@@ -98,7 +98,7 @@ export default function AdminSidebar({
               <div key={item.id} className="space-y-1">
                 <button
                   onClick={() =>
-                    hasSubmenu ? toggleExpand(item.id) : (window.location.href = item.href)
+                    hasSubmenu ? toggleExpand(item.id) : (window.location.href = item.href!)
                   }
                   className={cn(
                     'w-full flex items-center justify-between px-3 py-2.5 text-sm font-medium rounded-lg transition-all',
@@ -108,7 +108,9 @@ export default function AdminSidebar({
                   )}
                 >
                   <div className="flex items-center flex-1 min-w-0">
-                    <Icon className="mr-3 h-5 w-5 flex-shrink-0" />
+                    {item.icon && (
+                      <item.icon className="mr-3 h-5 w-5 flex-shrink-0" />
+                    )}
                     <span className="truncate">{item.label}</span>
                   </div>
                   {hasSubmenu && (
@@ -129,7 +131,7 @@ export default function AdminSidebar({
 
                 {hasSubmenu && isExpanded && (
                   <div className="ml-4 pl-4 border-l-2 border-gray-200 space-y-1">
-                    {item.submenu.map((sub) => {
+                    {item.submenu && item.submenu.map((sub) => {
                       const isSubActive =
                         pathname === sub.href ||
                         pathname.startsWith(sub.href + '/');

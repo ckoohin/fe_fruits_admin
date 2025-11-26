@@ -1,186 +1,3 @@
-// 'use client';
-
-// import React, { useEffect, useState } from 'react';
-// import { adminApi } from '@/lib/adminApi';
-// import { usePermissions } from '@/hooks/usePermissions';
-// import {
-//   StatsCard,
-//   SalesChart,
-//   RecentOrders,
-//   TopProducts,
-//   QuickActions,
-// } from '@/components/dashboard';
-
-// interface DashboardStats {
-//   totalProducts: number;
-//   totalCustomers: number;
-//   totalOrders: number;
-//   totalRevenue: number;
-//   revenueGrowth: number;
-//   orderGrowth: number;
-//   customerGrowth: number;
-//   productGrowth: number;
-// }
-
-// export default function DashboardPage() {
-//   const { permissions, hasPermission, loading: permLoading } = usePermissions();
-//   const [stats, setStats] = useState<DashboardStats | null>(null);
-//   const [loading, setLoading] = useState(true);
-//   const [error, setError] = useState<string | null>(null);
-//   const [timeRange, setTimeRange] = useState<'day' | 'month' | 'year'>('day');
-
-//   useEffect(() => {
-//     loadDashboardStats();
-//   }, []);
-
-//   const loadDashboardStats = async () => {
-//     try {
-//       setLoading(true);
-//       const response = await adminApi.getDashboardStats();
-//       if (response.success && response.data) {
-//         setStats(response.data);
-//       }
-//     } catch (err: any) {
-//       setError(err.message || 'Không thể tải dữ liệu dashboard');
-//     } finally {
-//       setLoading(false);
-//     }
-//   };
-
-//   if (loading || permLoading) {
-//     return (
-//       <div className="flex items-center justify-center min-h-screen">
-//         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
-//       </div>
-//     );
-//   }
-
-//   if (error) {
-//     return (
-//       <div className="flex items-center justify-center min-h-screen">
-//         <div className="text-center">
-//           <div className="text-red-600 text-lg mb-4">⚠️</div>
-//           <h2 className="text-xl font-semibold text-gray-900 mb-2">Lỗi tải dữ liệu</h2>
-//           <p className="text-gray-600 mb-4">{error}</p>
-//           <button
-//             onClick={loadDashboardStats}
-//             className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-//           >
-//             Thử lại
-//           </button>
-//         </div>
-//       </div>
-//     );
-//   }
-
-//   return (
-//     <div className="space-y-6">
-//       {/* 🔹 Quick Actions */}
-//       {hasPermission('create_products') && <QuickActions />}
-
-//       {/* 🔹 Stats Cards */}
-//       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-//         <StatsCard
-//           title="Tổng sản phẩm"
-//           value={stats?.totalProducts || 0}
-//           change={stats?.productGrowth || 0}
-//           icon="📦"
-//           color="blue"
-//         />
-//         <StatsCard
-//           title="Tổng khách hàng"
-//           value={stats?.totalCustomers || 0}
-//           change={stats?.customerGrowth || 0}
-//           icon="👥"
-//           color="green"
-//         />
-//         <StatsCard
-//           title="Tổng đơn hàng"
-//           value={stats?.totalOrders || 0}
-//           change={stats?.orderGrowth || 0}
-//           icon="🛒"
-//           color="yellow"
-//         />
-//         <StatsCard
-//           title="Tổng doanh thu"
-//           value={stats?.totalRevenue || 0}
-//           change={stats?.revenueGrowth || 0}
-//           icon="💰"
-//           color="purple"
-//           isCurrency
-//         />
-//       </div>
-
-//       {/* 🔹 Charts and Tables */}
-//       <div className="grid grid-cols-1 gap-6">
-//         {hasPermission('view_dashboard') && (
-//           <div className="bg-white p-6 rounded-lg shadow">
-//             <div className="flex items-center justify-between mb-4">
-//               <h2 className="text-lg font-semibold text-gray-900">
-//                 Biểu đồ doanh thu
-//               </h2>
-//               <div className="flex space-x-2">
-//                 <button
-//                   onClick={() => setTimeRange('day')}
-//                   className={`px-3 py-1 rounded-md text-sm ${
-//                     timeRange === 'day'
-//                       ? 'bg-blue-500 text-white'
-//                       : 'bg-gray-200 text-gray-800'
-//                   } hover:bg-blue-600 transition-colors`}
-//                 >
-//                   Ngày
-//                 </button>
-//                 <button
-//                   onClick={() => setTimeRange('month')}
-//                   className={`px-3 py-1 rounded-md text-sm ${
-//                     timeRange === 'month'
-//                       ? 'bg-blue-500 text-white'
-//                       : 'bg-gray-200 text-gray-800'
-//                   } hover:bg-blue-600 transition-colors`}
-//                 >
-//                   Tháng
-//                 </button>
-//                 <button
-//                   onClick={() => setTimeRange('year')}
-//                   className={`px-3 py-1 rounded-md text-sm ${
-//                     timeRange === 'year'
-//                       ? 'bg-blue-500 text-white'
-//                       : 'bg-gray-200 text-gray-800'
-//                   } hover:bg-blue-600 transition-colors`}
-//                 >
-//                   Năm
-//                 </button>
-//               </div>
-//             </div>
-//             <SalesChart timeRange={timeRange} />
-//           </div>
-//         )}
-//       </div>
-
-//       {/* 🔹 Top Products & Recent Orders */}
-//       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-//         {hasPermission('view_products') && (
-//           <div className="bg-white p-6 rounded-lg shadow">
-//             <h2 className="text-lg font-semibold text-gray-900 mb-4">
-//               Sản phẩm bán chạy
-//             </h2>
-//             <TopProducts />
-//           </div>
-//         )}
-
-//         {hasPermission('view_orders') && (
-//           <div className="bg-white p-6 rounded-lg shadow">
-//             <h2 className="text-lg font-semibold text-gray-900 mb-4">
-//               Đơn hàng gần đây
-//             </h2>
-//             <RecentOrders />
-//           </div>
-//         )}
-//       </div>
-//     </div>
-//   );
-// }
-
 'use client';
 import React from 'react';
 import { TrendingUp, ShoppingCart, DollarSign, Users, Package, Calendar } from 'lucide-react';
@@ -250,7 +67,6 @@ export default function AdminDashboard() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-slate-100 p-5 pl-3 pr-8">
       <div className="space-y-6">
-        {/* Header */}
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div>
             <h1 className="text-2xl font-bold text-slate-900 mb-1">
@@ -278,7 +94,6 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-5 text-white shadow-md hover:shadow-lg transition-all duration-300 hover:-translate-y-0.5">
             <div className="flex items-center justify-between mb-3">
@@ -337,9 +152,7 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* Charts Row */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          {/* Revenue Chart */}
           <div className="lg:col-span-2 bg-white rounded-xl p-5 shadow-md border border-slate-200">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-bold text-slate-900">Doanh thu theo thời gian</h2>
@@ -377,7 +190,6 @@ export default function AdminDashboard() {
             </ResponsiveContainer>
           </div>
 
-          {/* Order Status Pie Chart */}
           <div className="bg-white rounded-xl p-5 shadow-md border border-slate-200">
             <h2 className="text-lg font-bold text-slate-900 mb-4">Trạng thái đơn hàng</h2>
             <ResponsiveContainer width="100%" height={280}>
@@ -420,7 +232,6 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* Top Products */}
         <div className="bg-white rounded-xl p-5 shadow-md border border-slate-200">
           <h2 className="text-lg font-bold text-slate-900 mb-4">Sản phẩm bán chạy</h2>
           <ResponsiveContainer width="100%" height={280}>
@@ -444,7 +255,6 @@ export default function AdminDashboard() {
           </ResponsiveContainer>
         </div>
 
-        {/* Product Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {topSellingProducts.slice(0, 4).map((product: TopSellingProduct) => (
             <div key={product.variant_id} className="bg-white rounded-xl p-4 shadow-md border border-slate-200 hover:shadow-lg transition-all duration-300 hover:-translate-y-0.5">

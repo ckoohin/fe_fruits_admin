@@ -83,7 +83,7 @@ export function Pagination({
             {pageNumbers.map((page) => (
               <Button
                 key={page}
-                variant={page === currentPage ? 'default' : 'outline'}
+                variant={page === currentPage ? 'secondary' : 'outline'}
                 size="sm"
                 onClick={() => onPageChange(page)}
                 className="relative inline-flex items-center px-4 py-2"

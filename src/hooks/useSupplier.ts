@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { ApiHelper } from '@/utils/api';
 import { AuthUtils } from '@/utils/auth';
 import { Supplier, CreateSupplierRequest } from '@/types/supplier';
+import toast from 'react-hot-toast';
 
 declare global {
   interface Window {
@@ -18,7 +19,6 @@ export function useSuppliers() {
   const [xlsxLoaded, setXlsxLoaded] = useState(false);
   const itemsPerPage = 10;
 
-  // Load XLSX library
   useEffect(() => {
     if (typeof window !== 'undefined' && !window.XLSX) {
       const script = document.createElement('script');
@@ -30,12 +30,11 @@ export function useSuppliers() {
     }
   }, []);
 
-  // Fetch suppliers
   const fetchSuppliers = async () => {
     setLoading(true);
     try {
       if (!AuthUtils.isAuthenticated()) {
-        alert('Vui lòng đăng nhập');
+        toast.error('Vui lòng đăng nhập');
         window.location.href = '/login';
         return;
       }
@@ -45,20 +44,19 @@ export function useSuppliers() {
       if (response.success && response.data) {
         setSuppliers(Array.isArray(response.data) ? response.data : []);
       } else {
-        alert(response.message || 'Không thể tải dữ liệu nhà cung cấp');
+        toast.error(response.message || 'Không thể tải dữ liệu nhà cung cấp');
       }
     } catch (error) {
       console.error('Error fetching suppliers:', error);
-      alert('Lỗi khi tải nhà cung cấp');
+      toast.error('Lỗi khi tải nhà cung cấp');
     } finally {
       setLoading(false);
     }
   };
 
-  // Delete supplier
   const deleteSupplier = async (supplier: Supplier) => {
     if (!supplier || !supplier.id) {
-      alert('Dữ liệu nhà cung cấp không hợp lệ');
+      toast.error('Dữ liệu nhà cung cấp không hợp lệ');
       return;
     }
     
@@ -67,39 +65,34 @@ export function useSuppliers() {
     try {
       const response = await ApiHelper.delete(`api/v1/suppliers/${supplier.id}`);
       if (response.success) {
-        alert('Xóa nhà cung cấp thành công!');
+        toast.success('Xóa nhà cung cấp thành công!');
         fetchSuppliers();
       } else {
-        alert('Lỗi: ' + (response.message || 'Không thể xóa nhà cung cấp'));
+        toast.error('Lỗi: ' + (response.message || 'Không thể xóa nhà cung cấp'));
       }
     } catch (error: any) {
       console.error('Delete error:', error);
-      alert('Lỗi: ' + error.message);
+      toast.error('Lỗi: ' + error.message);
     }
   };
 
-  // Create supplier
   const createSupplier = async (data: CreateSupplierRequest) => {
     try {
-      console.log('=== CREATE SUPPLIER ===');
-      console.log('Data:', data);
-      
       const response = await ApiHelper.post('api/v1/suppliers', data);
       if (response.success) {
-        alert('Thêm nhà cung cấp thành công!');
+        toast.success('Thêm nhà cung cấp thành công!');
         fetchSuppliers();
         return true;
       }
-      alert('Lỗi: ' + (response.message || 'Không thể lưu nhà cung cấp'));
+      toast.error('Lỗi: ' + (response.message || 'Không thể lưu nhà cung cấp'));
       return false;
     } catch (error: any) {
       console.error('Create error:', error);
-      alert('Lỗi: ' + error.message);
+      toast.error('Lỗi: ' + error.message);
       return false;
     }
   };
 
-  // Update supplier
   const updateSupplier = async (id: string, data: CreateSupplierRequest) => {
     try {
       const updateData: any = {
@@ -120,29 +113,24 @@ export function useSuppliers() {
       if (data.bank_account?.trim()) updateData.bank_account = data.bank_account;
       if (data.bank_name?.trim()) updateData.bank_name = data.bank_name;
       
-      console.log('=== UPDATE SUPPLIER ===');
-      console.log('ID:', id);
-      console.log('Data:', updateData);
-      
       const response = await ApiHelper.patch(`api/v1/suppliers/${id}`, updateData);
       if (response.success) {
-        alert('Cập nhật thành công!');
+        toast.success('Cập nhật thành công!');
         fetchSuppliers();
         return true;
       }
-      alert('Lỗi: ' + (response.message || 'Không thể lưu nhà cung cấp'));
+      toast.error('Lỗi: ' + (response.message || 'Không thể lưu nhà cung cấp'));
       return false;
     } catch (error: any) {
       console.error('Update error:', error);
-      alert('Lỗi: ' + error.message);
+      toast.error('Lỗi: ' + error.message);
       return false;
     }
   };
 
-  // Export to Excel
   const handleExportExcel = () => {
     if (!window.XLSX) {
-      alert('Đang tải thư viện Excel, vui lòng thử lại sau giây lát...');
+      toast.loading('Đang tải thư viện Excel, vui lòng thử lại sau giây lát...');
       return;
     }
 
@@ -191,13 +179,12 @@ export function useSuppliers() {
     window.XLSX.writeFile(workbook, fileName);
   };
 
-  // Import from Excel
   const handleImportExcel = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     if (!window.XLSX) {
-      alert('Đang tải thư viện Excel, vui lòng thử lại sau giây lát...');
+      toast.loading('Đang tải thư viện Excel, vui lòng thử lại sau giây lát...');
       return;
     }
 
@@ -210,7 +197,7 @@ export function useSuppliers() {
         const jsonData = window.XLSX.utils.sheet_to_json(firstSheet);
         
         if (jsonData.length === 0) {
-          alert('File Excel trống hoặc không có dữ liệu');
+          toast.error('File Excel trống hoặc không có dữ liệu');
           return;
         }
         
@@ -257,7 +244,7 @@ export function useSuppliers() {
 
       } catch (error) {
         console.error('Error importing file:', error);
-        alert('Lỗi khi đọc file Excel. Vui lòng kiểm tra lại định dạng file.');
+        toast.error('Lỗi khi đọc file Excel. Vui lòng kiểm tra lại định dạng file.');
       }
     };
     
@@ -265,7 +252,6 @@ export function useSuppliers() {
     e.target.value = '';
   };
 
-  // Filter suppliers based on search query
   const filteredSuppliers = suppliers.filter(supplier => {
     const query = searchQuery.toLowerCase().trim();
     if (!query) return true;
@@ -279,18 +265,15 @@ export function useSuppliers() {
     );
   });
 
-  // Pagination
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentSuppliers = filteredSuppliers.slice(indexOfFirstItem, indexOfLastItem);
   const totalPages = Math.ceil(filteredSuppliers.length / itemsPerPage);
 
-  // Reset page when search changes
   useEffect(() => {
     setCurrentPage(1);
   }, [searchQuery]);
 
-  // Fetch suppliers on mount
   useEffect(() => {
     fetchSuppliers();
   }, []);

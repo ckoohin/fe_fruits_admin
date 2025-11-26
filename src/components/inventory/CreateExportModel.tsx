@@ -1,5 +1,6 @@
 'use client';
 import React, { useState, useEffect } from 'react';
+import toast from 'react-hot-toast';
 import { CreateExportRequest } from '@/types/export';
 import { ApiHelper } from '@/utils/api';
 import { AuthUtils } from '@/utils/auth';
@@ -7,7 +8,7 @@ import { AuthUtils } from '@/utils/auth';
 interface CreateExportModalProps {
   show: boolean;
   onClose: () => void;
-  onSubmit: (data: CreateExportRequest) => Promise<boolean>; // Thay đổi để nhận Promise
+  onSubmit: (data: CreateExportRequest) => Promise<boolean>; 
 }
 
 interface DetailRow {
@@ -19,7 +20,7 @@ interface DetailRow {
 interface Product {
   id: number;
   name: string;
-  variants: { id: number; name: string; sku?: string }[];
+  variants: { id: number; name: string; sku?: string; stock: string; unit:string}[];
 }
 
 interface Branch {
@@ -43,20 +44,30 @@ export default function CreateExportModal({ show, onClose, onSubmit }: CreateExp
   const [loadingVariants, setLoadingVariants] = useState<{ [index: number]: boolean }>({});
   const [error, setError] = useState<string | null>(null);
   const [branches, setBranches] = useState<Branch[]>([]);
+  const productList = Array.isArray(products) ? products : [];
 
   useEffect(() => {
     const fetchProducts = async () => {
       setLoadingProducts(true);
       try {
-        const response = await ApiHelper.get('/api/v1/products');
+        const response = await ApiHelper.get<any>('api/v1/products?limit=1000');
+
         if (response.success && response.data) {
-          setProducts(response.data);
+          const list = response.data.data 
+            ? response.data.data 
+            : Array.isArray(response.data) 
+              ? response.data 
+              : [];
+
+          setProducts(list);
         } else {
-          setError('Lỗi khi tải danh sách sản phẩm');
+          toast.error('Không tải được danh sách sản phẩm');
+          setProducts([]);
         }
       } catch (error) {
-        setError('Lỗi khi tải danh sách sản phẩm');
-        console.error('Error fetching products:', error);
+        console.error('Lỗi tải sản phẩm:', error);
+        toast.error('Lỗi kết nối server');
+        setProducts([]);
       } finally {
         setLoadingProducts(false);
       }
@@ -78,7 +89,7 @@ export default function CreateExportModal({ show, onClose, onSubmit }: CreateExp
 
     const fetchUserBranch = async () => {
       const user = AuthUtils.getUser();
-      const branchId = user && user.branchId !== undefined ? user.branchId : 0;
+      const branchId = user?.branchId ?? 0;
       setFormData(prev => ({ ...prev, from_branch_id: branchId }));
       if (branchId === 0) {
         setError('Không tìm thấy chi nhánh của người dùng. Vui lòng liên hệ quản trị viên.');
@@ -150,8 +161,8 @@ export default function CreateExportModal({ show, onClose, onSubmit }: CreateExp
     e.preventDefault();
 
     if (formData.from_branch_id === 0) {
-        onClose();
-      alert('Không thể tạo phiếu xuất kho vì không có chi nhánh hợp lệ');
+      onClose();
+      toast.error('Không thể tạo phiếu xuất kho vì không có chi nhánh hợp lệ');
       return;
     }
 
@@ -160,7 +171,7 @@ export default function CreateExportModal({ show, onClose, onSubmit }: CreateExp
     );
 
     if (validDetails.length === 0) {
-      alert('Vui lòng thêm ít nhất 1 sản phẩm hợp lệ');
+      toast.error('Vui lòng thêm ít nhất 1 sản phẩm hợp lệ');
       return;
     }
 
@@ -175,18 +186,18 @@ export default function CreateExportModal({ show, onClose, onSubmit }: CreateExp
       const success = await onSubmit(requestData); // Chờ phản hồi từ onSubmit
       console.log('Kết quả submit:', success);
       if (success) {
-        alert('✅ Tạo yêu cầu chuyển kho thành công');
+        toast.success('Tạo yêu cầu chuyển kho thành công');
         setFormData({ from_branch_id: formData.from_branch_id, notes: '' });
         setDetails([{ product_id: 0, variant_id: 0, quantity: 0 }]);
         setVariantsMap({});
         setLoadingVariants({});
-        onClose(); // Đóng modal nếu thành công
+        onClose(); 
       } else {
-        alert('❌ Tạo yêu cầu chuyển kho thất bại. Vui lòng thử lại.');
+        toast.error('Tạo yêu cầu chuyển kho thất bại. Vui lòng thử lại.');
       }
     } catch (error) {
       console.error('Lỗi khi gửi yêu cầu:', error);
-      alert('❌ Đã xảy ra lỗi khi tạo yêu cầu chuyển kho. Vui lòng thử lại.');
+      toast.error('Đã xảy ra lỗi khi tạo yêu cầu chuyển kho. Vui lòng thử lại.');
     }
   };
 
@@ -269,11 +280,16 @@ export default function CreateExportModal({ show, onClose, onSubmit }: CreateExp
                           disabled={loadingProducts || formData.from_branch_id === 0}
                         >
                           <option value="0">Chọn sản phẩm</option>
-                          {products.map((product) => (
-                            <option key={product.id} value={product.id}>
-                              {product.name}
-                            </option>
-                          ))}
+                          {products.map((product) => {
+                            const firstVariant = product.variants?.[0];
+                            return (
+                              <option key={product.id} value={product.id}>
+                                [{firstVariant?.sku || 'N/A'}] {product.name}
+                                {firstVariant?.stock !== undefined && ` - Tồn: ${firstVariant.stock}`}
+                                {firstVariant?.unit && ` (${firstVariant.unit})`}
+                              </option>
+                            );
+                          })}
                         </select>
                       </td>
                       <td className="px-3 py-2">

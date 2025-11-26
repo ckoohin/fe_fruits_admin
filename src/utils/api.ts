@@ -80,7 +80,7 @@ export class ApiHelper {
 
       return {
         success: true,
-        data: data?.data || data || null,
+        data: data,
         message,
       };
 

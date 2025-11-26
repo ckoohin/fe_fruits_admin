@@ -31,7 +31,6 @@ export default function StockChecksPage() {
     await cancelStockCheck(check.id);
   };
 
-  // Lấy tên chi nhánh từ phiếu đầu tiên (vì user chỉ thuộc 1 chi nhánh)
   const branchName = stockChecks.length > 0 ? stockChecks[0].branch_name : '';
 
   const indexOfLastItem = currentPage * itemsPerPage;
@@ -55,7 +54,6 @@ export default function StockChecksPage() {
           onCancel={handleCancel}
         />
 
-        {/* Pagination */}
         <div className="p-4 flex justify-between items-center border-t border-gray-200 bg-gray-50">
           <span className="text-sm text-gray-600 font-medium">
             {searchQuery ? (

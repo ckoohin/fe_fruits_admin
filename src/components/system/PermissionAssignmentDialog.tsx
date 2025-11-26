@@ -13,11 +13,11 @@ import {
 import { Checkbox } from '@/components/ui/Checkbox';
 import { Label } from '@/components/ui/Label';
 import { ScrollArea } from '@/components/ui/ScrollArea';
-import { useToast } from '@/hooks/useToast';
+import toast from 'react-hot-toast';
 import { Loader2 } from 'lucide-react';
 
 interface Permission {
-  id: number;
+  id: string;
   name: string;
   slug: string;
 }
@@ -25,12 +25,12 @@ interface Permission {
 interface PermissionAssignmentDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  roleId: number;
+  roleId: string;
   roleName: string;
   allPermissions: Permission[];
   assignedPermissions: Permission[];
-  onAssign: (roleId: number, permissionId: number) => Promise<void>;
-  onRevoke: (roleId: number, permissionId: number) => Promise<void>;
+  onAssign: (roleId: string, permissionId: string) => Promise<void>;
+  onRevoke: (roleId: string, permissionId: string) => Promise<void>;
   onRefresh: () => void;
 }
 
@@ -45,9 +45,8 @@ export function PermissionAssignmentDialog({
   onRevoke,
   onRefresh,
 }: PermissionAssignmentDialogProps) {
-  const [selectedPermissions, setSelectedPermissions] = useState<Set<number>>(new Set());
+  const [selectedPermissions, setSelectedPermissions] = useState<Set<string>>(new Set());
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { toast } = useToast();
 
   useEffect(() => {
     if (isOpen) {
@@ -56,7 +55,7 @@ export function PermissionAssignmentDialog({
     }
   }, [assignedPermissions, isOpen]);
 
-  const handleTogglePermission = (permissionId: number) => {
+  const handleTogglePermission = (permissionId: string) => {
     const newSelected = new Set(selectedPermissions);
     if (newSelected.has(permissionId)) {
       newSelected.delete(permissionId);
@@ -90,20 +89,12 @@ export function PermissionAssignmentDialog({
       for (const permissionId of toRevoke) {
         await onRevoke(roleId, permissionId);
       }
-
-      toast({
-        title: 'Thành công',
-        description: 'Đã cập nhật quyền hạn cho vai trò',
-      });
+      toast.success('Đã cập nhật quyền hạn cho vai trò thành công!');
       
       onRefresh();
       onClose();
     } catch (error) {
-      toast({
-        title: 'Lỗi',
-        description: 'Không thể cập nhật quyền hạn',
-        variant: 'destructive',
-      });
+      toast.error('Đã có lỗi xảy ra khi cập nhật quyền hạn');
     } finally {
       setIsSubmitting(false);
     }

@@ -29,7 +29,6 @@ export default function CouponHeader({
   return (
     <div className="p-5 border-b border-gray-200 bg-white">
       <div className="flex items-center justify-between gap-6">
-        {/* Left: Title */}
         <div>
           <h2 className="text-lg font-semibold text-gray-900">Danh sách khuyến mãi</h2>
           <p className="text-sm text-gray-500 mt-0.5">
@@ -43,7 +42,6 @@ export default function CouponHeader({
         
         {/* Right: Actions Group */}
         <div className="flex items-center gap-3">
-          {/* Search Input */}
           <div className="relative">
             <input
               type="text"

@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { ApiHelper } from '@/utils/api';
 import { AuthUtils } from '@/utils/auth';
 import { Tag, CreateTagRequest, UpdateTagRequest } from '@/types/tag';
+import toast from 'react-hot-toast';
 
 declare global {
   interface Window {
@@ -33,7 +34,7 @@ export function useTags() {
     setLoading(true);
     try {
       if (!AuthUtils.isAuthenticated()) {
-        alert('Vui lòng đăng nhập');
+        toast.error('Vui lòng đăng nhập');
         window.location.href = '/login';
         return;
       }
@@ -41,10 +42,10 @@ export function useTags() {
       if (response.success && response.data) {
         setTags(Array.isArray(response.data) ? response.data : []);
       } else {
-        alert(response.message || 'Không thể tải danh sách tags');
+        toast.error(response.message || 'Không thể tải danh sách tags');
       }
     } catch (error) {
-      alert('Lỗi khi tải danh sách tags');
+      toast.error('Lỗi khi tải danh sách tags');
     } finally {
       setLoading(false);
     }
@@ -55,13 +56,13 @@ export function useTags() {
     try {
       const response = await ApiHelper.delete(`/api/v1/tags/${tag.id}`);
       if (response.success) {
-        alert('Xóa thành công!');
+        toast.success('Xóa thành công!');
         fetchTags();
       } else {
-        alert('Lỗi: ' + response.message);
+        toast.error('Lỗi: ' + response.message);
       }
     } catch (error: any) {
-      alert('Lỗi: ' + error.message);
+      toast.error('Lỗi: ' + error.message);
     }
   };
 
@@ -69,14 +70,14 @@ export function useTags() {
     try {
       const response = await ApiHelper.post('/api/v1/tags', data);
       if (response.success) {
-        alert('Thêm thành công!');
+        toast.success('Thêm thành công!');
         fetchTags();
         return true;
       }
-      alert('Lỗi: ' + response.message);
+      toast.error('Lỗi: ' + response.message);
       return false;
     } catch (error: any) {
-      alert('Lỗi: ' + error.message);
+      toast.error('Lỗi: ' + error.message);
       return false;
     }
   };
@@ -85,21 +86,21 @@ export function useTags() {
     try {
       const response = await ApiHelper.patch(`/api/v1/tags/${id}`, data);
       if (response.success) {
-        alert('Cập nhật thành công!');
+        toast.success('Cập nhật thành công!');
         fetchTags();
         return true;
       }
-      alert('Lỗi: ' + response.message);
+      toast.error('Lỗi: ' + response.message);
       return false;
     } catch (error: any) {
-      alert('Lỗi: ' + error.message);
+      toast.error('Lỗi: ' + error.message);
       return false;
     }
   };
 
   const handleExportExcel = () => {
     if (!window.XLSX) {
-      alert('Đang tải thư viện...');
+      toast.loading('Đang tải thư viện...');
       return;
     }
     const exportData = filteredTags.map(tag => ({
@@ -126,7 +127,7 @@ export function useTags() {
         const jsonData = window.XLSX.utils.sheet_to_json(ws);
         
         if (jsonData.length === 0) {
-          alert('File trống');
+          toast.error('File trống');
           return;
         }
 
@@ -150,7 +151,7 @@ export function useTags() {
         alert(`Thành công: ${success}\nThất bại: ${error}`);
         fetchTags();
       } catch (error) {
-        alert('Lỗi đọc file');
+        toast.error('Lỗi đọc file');
       }
     };
     reader.readAsBinaryString(file);

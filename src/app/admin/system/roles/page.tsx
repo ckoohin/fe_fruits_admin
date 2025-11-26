@@ -1,27 +1,31 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { Shield, Key, Plus } from 'lucide-react';
-import { Button } from '@/components/ui/Button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/Tabs';
-import { useToast } from '@/hooks/useToast';
-import { RoleManagementTable } from '@/components/system/RoleManagementTable';
-import { RoleFormDialog } from '@/components/system/RoleFormDialog';
-import { PermissionManagementTable } from '@/components/system/PermissionManagementTable';
-import { PermissionFormDialog } from '@/components/system/PermissionFormDialog';
-import { PermissionAssignmentDialog } from '@/components/system/PermissionAssignmentDialog';
-import { useAdminAuth } from '@/hooks/useAdminAuth';
-import { useRoles } from '@/hooks/useRole';
-import { usePermissions } from '@/hooks/usePermission';
-import { Role } from '@/types/role';
-import { Permission } from '@/types/permission';
+import { useState, useEffect } from "react";
+import { Shield, Key, Plus } from "lucide-react";
+import { Button } from "@/components/ui/Button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/Card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/Tabs";
+import { RoleManagementTable } from "@/components/system/RoleManagementTable";
+import { RoleFormDialog } from "@/components/system/RoleFormDialog";
+import { PermissionManagementTable } from "@/components/system/PermissionManagementTable";
+import { PermissionFormDialog } from "@/components/system/PermissionFormDialog";
+import { PermissionAssignmentDialog } from "@/components/system/PermissionAssignmentDialog";
+import { useAdminAuth } from "@/hooks/useAdminAuth";
+import { useRoles } from "@/hooks/useRole";
+import { usePermissions } from "@/hooks/usePermission";
+import { Role } from "@/types/role";
+import { Permission } from "@/types/permission";
+import toast from "react-hot-toast";
 
 export default function RolesPage() {
-  const { toast } = useToast();
   const { hasPermission } = useAdminAuth();
 
-  // ✅ Hooks dữ liệu
   const {
     roles,
     fetchRoles,
@@ -36,6 +40,14 @@ export default function RolesPage() {
 
   const {
     permissions,
+    currentPage,
+    totalPages,
+    itemsPerPage,
+    searchQuery,
+    currentPermissions,
+    filteredPermissions,
+    setCurrentPage,
+    setSearchQuery,
     fetchPermissions,
     createPermission,
     updatePermission,
@@ -43,33 +55,31 @@ export default function RolesPage() {
     loading: loadingPermissions,
   } = usePermissions();
 
-  // ✅ UI state
   const [isRoleDialogOpen, setIsRoleDialogOpen] = useState(false);
   const [isPermissionDialogOpen, setIsPermissionDialogOpen] = useState(false);
   const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false);
 
   const [editingRole, setEditingRole] = useState<Role | null>(null);
-  const [editingPermission, setEditingPermission] = useState<Permission | null>(null);
+  const [editingPermission, setEditingPermission] = useState<Permission | null>(
+    null
+  );
   const [managingRole, setManagingRole] = useState<Role | null>(null);
-  const [assignedPermissions, setAssignedPermissions] = useState<Permission[]>([]);
+  const [assignedPermissions, setAssignedPermissions] = useState<Permission[]>(
+    []
+  );
 
-  const canManageRoles = hasPermission('manage-roles');
-  const canManagePermissions = hasPermission('manage-permissions');
+  const canManageRoles = hasPermission("manage-roles");
+  const canManagePermissions = hasPermission("manage-permissions");
 
   useEffect(() => {
     if (!canManageRoles && !canManagePermissions) {
-      toast({
-        title: 'Không có quyền truy cập',
-        description: 'Bạn không có quyền xem trang này',
-        variant: 'destructive',
-      });
+      toast.error('Bạn không có quyền truy cập trang này');
       return;
     }
     fetchRoles();
     fetchPermissions();
   }, [canManageRoles, canManagePermissions]);
 
-  // ✅ Mở dialog gán quyền
   const openManagePermissions = async (role: Role) => {
     setManagingRole(role);
     const data = await getRolePermissions(role.id.toString());
@@ -89,7 +99,8 @@ export default function RolesPage() {
       </div>
     );
   }
-
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   return (
     <div className="container mx-auto space-y-6">
       <Tabs defaultValue="roles" className="space-y-4">
@@ -110,7 +121,9 @@ export default function RolesPage() {
               <div className="flex justify-between items-center">
                 <div>
                   <CardTitle>Quản lý vai trò</CardTitle>
-                  <CardDescription>Tổng số: {roles.length} vai trò</CardDescription>
+                  <CardDescription>
+                    Tổng số: {roles.length} vai trò
+                  </CardDescription>
                 </div>
                 {canManageRoles && (
                   <Button onClick={() => setIsRoleDialogOpen(true)}>
@@ -136,7 +149,10 @@ export default function RolesPage() {
                     setEditingRole(role);
                     setIsRoleDialogOpen(true);
                   }}
-                  onDelete={deleteRole}
+                  onDelete={(roleId) => {
+                    const role = roles?.find(r => r.id === String(roleId));
+                    if (role) deleteRole(role);
+                  }}
                   onManagePermissions={openManagePermissions}
                   onRefresh={fetchRoles}
                 />
@@ -171,18 +187,89 @@ export default function RolesPage() {
                 </div>
               ) : (
                 <PermissionManagementTable
-                  permissions={permissions}
+                  permissions={currentPermissions}
                   canEdit={canManagePermissions}
                   canDelete={canManagePermissions}
                   onEdit={(permission) => {
                     setEditingPermission(permission);
                     setIsPermissionDialogOpen(true);
                   }}
-                  onDelete={deletePermission}
+                  onDelete={(permissionId) => deletePermission(Number(permissionId))}
                   onRefresh={fetchPermissions}
                 />
               )}
             </CardContent>
+            <div className="p-4 flex justify-between items-center border-t border-gray-200 bg-gray-50">
+              <span className="text-sm text-gray-600 font-medium">
+                {searchQuery ? (
+                  <>
+                    Tìm thấy {filteredPermissions.length} / {permissions.length}{" "}
+                    quyền
+                  </>
+                ) : (
+                  <>Tổng: {permissions.length} quyền</>
+                )}
+              </span>
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={() => setCurrentPage(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  className="p-2 border border-gray-300 rounded-lg hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                >
+                  <svg
+                    className="w-5 h-5 text-gray-600"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M15 19l-7-7 7-7"
+                    />
+                  </svg>
+                </button>
+
+                <div className="flex items-center space-x-1">
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                    (page) => (
+                      <button
+                        key={page}
+                        onClick={() => setCurrentPage(page)}
+                        className={`min-w-[40px] px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                          currentPage === page
+                            ? "bg-emerald-600 text-white shadow-sm"
+                            : "text-gray-700 hover:bg-white"
+                        }`}
+                      >
+                        {page}
+                      </button>
+                    )
+                  )}
+                </div>
+
+                <button
+                  onClick={() => setCurrentPage(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                  className="p-2 border border-gray-300 rounded-lg hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                >
+                  <svg
+                    className="w-5 h-5 text-gray-600"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 5l7 7-7 7"
+                    />
+                  </svg>
+                </button>
+              </div>
+            </div>
           </Card>
         </TabsContent>
       </Tabs>
@@ -228,8 +315,8 @@ export default function RolesPage() {
           roleName={managingRole.name}
           allPermissions={permissions}
           assignedPermissions={assignedPermissions}
-          onAssign={assignPermissionToRole}
-          onRevoke={revokePermissionFromRole}
+          onAssign={async (roleId, permissionId) => void await assignPermissionToRole(roleId, permissionId)}
+          onRevoke={async (roleId, permissionId) => void await revokePermissionFromRole(roleId, permissionId)}
           onRefresh={fetchRoles}
         />
       )}

@@ -1,5 +1,6 @@
 'use client';
 import React, { useState, useEffect } from 'react';
+import toast from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
 import { ApiHelper } from '@/utils/api';
 import { AuthUtils } from '@/utils/auth';
@@ -24,8 +25,6 @@ interface SelectedItem {
 
 export default function CreateStockCheckPage() {
   const router = useRouter();
-  
-  // ✅ FIX: Dùng helper method, chấp nhận branchId = 0
   const userBranchId = AuthUtils.getBranchId();
 
   const [branchStock, setBranchStock] = useState<BranchStock[]>([]);
@@ -36,34 +35,30 @@ export default function CreateStockCheckPage() {
   const [saving, setSaving] = useState(false);
   const [selectAll, setSelectAll] = useState(false);
 
-  // Fetch danh sách tồn kho
   useEffect(() => {
     const fetchBranchStock = async () => {
-      // ✅ FIX: branchId = 0 là hợp lệ, chỉ reject null/undefined
       if (userBranchId === null || userBranchId === undefined) {
-        console.error('❌ Invalid Branch ID:', userBranchId);
-        alert('Không xác định được chi nhánh. Vui lòng đăng nhập lại.');
+        toast.error('Không xác định được chi nhánh. Vui lòng đăng nhập lại.');
         router.push('/login');
         return;
       }
-
-      console.log('🔄 Fetching stock for branch:', userBranchId, userBranchId === 0 ? '(Kho tổng)' : '');
+      console.log('Fetching stock for branch:', userBranchId, userBranchId === 0 ? '(Kho tổng)' : '');
 
       try {
         const response = await ApiHelper.get<BranchStock[]>(
           `api/v1/inventory/branches/${userBranchId}/stock`
         );
-        
+
         if (response.success && response.data) {
-          console.log('✅ Branch stock loaded:', response.data.length, 'items');
+          console.log('Branch stock loaded:', response.data.length, 'items');
           setBranchStock(Array.isArray(response.data) ? response.data : []);
         } else {
-          console.error('❌ Failed to load stock:', response.message);
-          alert('Không thể tải danh sách sản phẩm: ' + response.message);
+          console.error('Failed to load stock:', response.message);
+          toast.error('Không thể tải danh sách sản phẩm: ' + response.message);
         }
       } catch (error) {
-        console.error('❌ Error fetching branch stock:', error);
-        alert('Lỗi khi tải danh sách sản phẩm');
+        console.error('Error fetching branch stock:', error);
+        toast.error('Lỗi khi tải danh sách sản phẩm');
       } finally {
         setLoading(false);
       }
@@ -72,7 +67,6 @@ export default function CreateStockCheckPage() {
     fetchBranchStock();
   }, [userBranchId, router]);
 
-  // Filter sản phẩm
   const filteredStock = branchStock.filter(item => {
     const query = searchQuery.toLowerCase().trim();
     if (!query) return true;
@@ -83,7 +77,6 @@ export default function CreateStockCheckPage() {
     );
   });
 
-  // Toggle chọn sản phẩm
   const toggleSelectItem = (item: BranchStock) => {
     const newSelected = new Map(selectedItems);
     
@@ -104,7 +97,6 @@ export default function CreateStockCheckPage() {
     setSelectAll(newSelected.size === filteredStock.length);
   };
 
-  // Chọn tất cả
   const toggleSelectAll = () => {
     if (selectAll) {
       setSelectedItems(new Map());
@@ -126,7 +118,6 @@ export default function CreateStockCheckPage() {
     }
   };
 
-  // Cập nhật số lượng kiểm
   const updateCountedQuantity = (variantId: number, value: string) => {
     const quantity = parseInt(value) || 0;
     const newSelected = new Map(selectedItems);
@@ -139,22 +130,20 @@ export default function CreateStockCheckPage() {
     }
   };
 
-  // Lưu và hoàn thành phiếu kiểm
   const handleSaveAndComplete = async () => {
-    // ✅ FIX: branchId = 0 là hợp lệ
     if (userBranchId === null || userBranchId === undefined) {
-      alert('❌ Lỗi: Không xác định được chi nhánh. Vui lòng đăng nhập lại.');
+      toast.error('Lỗi: Không xác định được chi nhánh. Vui lòng đăng nhập lại.');
       console.error('Invalid branchId when saving:', userBranchId);
       return;
     }
 
     if (selectedItems.size === 0) {
-      alert('Vui lòng chọn ít nhất một sản phẩm để kiểm kho');
+      toast.error('Vui lòng chọn ít nhất một sản phẩm để kiểm kho');
       return;
     }
 
     if (!notes.trim()) {
-      alert('Vui lòng nhập ghi chú');
+      toast.error('Vui lòng nhập ghi chú');
       return;
     }
 
@@ -169,22 +158,18 @@ export default function CreateStockCheckPage() {
         branchId: userBranchId,
         notes: notes.trim()
       };
-      console.log('📤 Creating stock check with payload:', createPayload);
-
-      // Bước 1: Tạo phiếu kiểm
       const createResponse = await ApiHelper.post('api/v1/inventory/checks', createPayload);
-      console.log('📥 Create response:', createResponse);
+      console.log('Create response:', createResponse);
 
       if (!createResponse.success || !createResponse.data) {
         throw new Error(createResponse.message || 'Không thể tạo phiếu kiểm');
       }
 
       const checkId = createResponse.data.id;
-      console.log('✅ Created check ID:', checkId);
+      console.log('Created check ID:', checkId);
 
-      // Bước 2: Thêm từng item vào phiếu
       for (const item of selectedItems.values()) {
-        console.log('📤 Adding item:', item.variant_name);
+        console.log('Adding item:', item.variant_name);
         
         const addItemResponse = await ApiHelper.post(
           `api/v1/inventory/checks/${checkId}/items`,
@@ -199,24 +184,23 @@ export default function CreateStockCheckPage() {
         }
       }
 
-      // Bước 3: Complete phiếu kiểm
       console.log('📤 Completing check:', checkId);
       const completeResponse = await ApiHelper.post(
         `api/v1/inventory/checks/${checkId}/complete`,
         {}
       );
+      console.log('Complete response:', completeResponse);
 
       if (!completeResponse.success) {
         throw new Error('Không thể hoàn thành phiếu kiểm');
       }
 
-      console.log('✅ Stock check completed successfully');
-      alert('✅ Tạo và hoàn thành phiếu kiểm kho thành công!');
+      console.log('Stock check completed successfully');
+      toast.success('Tạo và hoàn thành phiếu kiểm kho thành công!');
       router.push('/admin/inventory/check');
       
     } catch (error: any) {
-      console.error('❌ Save error:', error);
-      alert('❌ Lỗi: ' + (error.message || 'Không thể lưu phiếu kiểm'));
+      toast.error('Lỗi: ' + (error.message || 'Không thể lưu phiếu kiểm'));
     } finally {
       setSaving(false);
     }
@@ -230,13 +214,12 @@ export default function CreateStockCheckPage() {
     );
   }
 
-  // ✅ FIX: Chỉ reject khi null/undefined, chấp nhận 0
   if (userBranchId === null || userBranchId === undefined) {
     return (
       <div className="max-w-7xl mx-auto p-6">
         <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
           <h2 className="text-xl font-bold text-red-700 mb-2">
-            ⚠️ Không xác định được chi nhánh
+            Không xác định được chi nhánh
           </h2>
           <p className="text-red-600 mb-4">
             Tài khoản của bạn chưa được gán chi nhánh hoặc phiên đăng nhập đã hết hạn.
@@ -254,7 +237,6 @@ export default function CreateStockCheckPage() {
 
   return (
     <div className="max-w-7xl mx-auto p-6 space-y-6">
-      {/* Header */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
         <div className="flex items-center justify-between mb-4">
           <div>
@@ -271,7 +253,6 @@ export default function CreateStockCheckPage() {
           </button>
         </div>
 
-        {/* Ghi chú */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Ghi chú <span className="text-red-500">*</span>
@@ -286,9 +267,7 @@ export default function CreateStockCheckPage() {
         </div>
       </div>
 
-      {/* Danh sách sản phẩm */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-        {/* Search & Select All */}
         <div className="p-4 border-b border-gray-200 space-y-3">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -315,7 +294,6 @@ export default function CreateStockCheckPage() {
           </div>
         </div>
 
-        {/* Product List */}
         <div className="divide-y divide-gray-100 max-h-[500px] overflow-y-auto">
           {filteredStock.length === 0 ? (
             <div className="p-8 text-center text-gray-500">
@@ -334,7 +312,6 @@ export default function CreateStockCheckPage() {
                   className={`p-4 hover:bg-gray-50 transition-colors ${isSelected ? 'bg-emerald-50' : ''}`}
                 >
                   <div className="flex items-start gap-4">
-                    {/* Checkbox */}
                     <button
                       onClick={() => toggleSelectItem(item)}
                       className="mt-1"
@@ -346,7 +323,6 @@ export default function CreateStockCheckPage() {
                       )}
                     </button>
 
-                    {/* Product Info */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex-1">
@@ -362,7 +338,6 @@ export default function CreateStockCheckPage() {
                           </div>
                         </div>
 
-                        {/* Quantity Input */}
                         {isSelected && (
                           <div className="flex items-center gap-3">
                             <div>
@@ -400,7 +375,6 @@ export default function CreateStockCheckPage() {
           )}
         </div>
 
-        {/* Footer Actions */}
         <div className="p-4 border-t border-gray-200 bg-gray-50 flex items-center justify-between">
           <div className="text-sm text-gray-600">
             <span className="font-medium">Tổng sản phẩm kiểm:</span>{' '}

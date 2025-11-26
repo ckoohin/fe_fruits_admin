@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { CreateImportRequest } from '@/types/import';
 import { ApiHelper } from '@/utils/api';
+import toast from 'react-hot-toast';
 
 interface CreateImportModalProps {
   show: boolean;
@@ -32,27 +33,34 @@ export default function CreateImportModal({ show, onClose, onSubmit }: CreateImp
   const [details, setDetails] = useState<DetailRow[]>([{ product_id: 0, variant_id: 0, import_quantity: 0 }]);
   const [products, setProducts] = useState<Product[]>([]);
   
-  // MỖI DÒNG CÓ DANH SÁCH VARIANTS RIÊNG
   const [variantsByRow, setVariantsByRow] = useState<{ [key: number]: Variant[] }>({});
   const [loadingVariantsByRow, setLoadingVariantsByRow] = useState<{ [key: number]: boolean }>({});
   
   const [loadingProducts, setLoadingProducts] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch products
   useEffect(() => {
     const fetchProducts = async () => {
       setLoadingProducts(true);
       try {
-        const response = await ApiHelper.get('/api/v1/products');
+        const response = await ApiHelper.get<any>('api/v1/products?limit=1000');
+
         if (response.success && response.data) {
-          setProducts(response.data);
+          const list = response.data.data 
+            ? response.data.data 
+            : Array.isArray(response.data) 
+              ? response.data 
+              : [];
+
+          setProducts(list);
         } else {
-          setError(response.message || 'Không thể tải danh sách sản phẩm');
+          toast.error('Không tải được danh sách sản phẩm');
+          setProducts([]);
         }
       } catch (error) {
-        setError('Lỗi khi tải danh sách sản phẩm');
-        console.error('Error fetching products:', error);
+        console.error('Lỗi tải sản phẩm:', error);
+        toast.error('Lỗi kết nối server');
+        setProducts([]);
       } finally {
         setLoadingProducts(false);
       }
@@ -70,7 +78,6 @@ export default function CreateImportModal({ show, onClose, onSubmit }: CreateImp
     if (details.length > 1) {
       setDetails(details.filter((_, i) => i !== index));
       
-      // Xóa variants của dòng này
       const newVariants = { ...variantsByRow };
       delete newVariants[index];
       setVariantsByRow(newVariants);
@@ -85,14 +92,12 @@ export default function CreateImportModal({ show, onClose, onSubmit }: CreateImp
     const newDetails = [...details];
     newDetails[index] = { ...newDetails[index], [field]: Number(value) };
     
-    // Nếu đổi product thì reset variant_id
     if (field === 'product_id') {
       newDetails[index].variant_id = 0;
     }
     
     setDetails(newDetails);
 
-    // Load variants cho TỪNG DÒNG khi product_id thay đổi
     if (field === 'product_id' && Number(value) > 0) {
       setLoadingVariantsByRow({ ...loadingVariantsByRow, [index]: true });
       setError(null);
@@ -117,7 +122,7 @@ export default function CreateImportModal({ show, onClose, onSubmit }: CreateImp
     e.preventDefault();
 
     if (!formData.import_code.trim()) {
-      alert('Vui lòng nhập mã phiếu nhập');
+      toast.error('Vui lòng nhập mã phiếu nhập');
       return;
     }
 
@@ -126,7 +131,7 @@ export default function CreateImportModal({ show, onClose, onSubmit }: CreateImp
     );
 
     if (validDetails.length === 0) {
-      alert('Vui lòng thêm ít nhất 1 sản phẩm hợp lệ');
+      toast.error('Vui lòng thêm ít nhất 1 sản phẩm hợp lệ');
       return;
     }
 

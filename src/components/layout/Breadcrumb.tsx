@@ -38,7 +38,7 @@ const Breadcrumb: React.FC<BreadcrumbProps> = ({
 
     for (const nav of menuItems) {
       const canAccess =
-        !nav.permissions?.length || nav.permissions.some((p) => hasPermission(p));
+        !nav.requiredPermissions?.length || nav.requiredPermissions.some((p) => hasPermission(p));
 
       if (!canAccess) continue;
       if (!pathname.startsWith(nav.href)) continue;
@@ -126,11 +126,11 @@ const Breadcrumb: React.FC<BreadcrumbProps> = ({
                 <span
                   className={cn(
                     'truncate max-w-[200px]',
-                    isLast || item.current
+                    isLast || ('current' in item && item.current)
                       ? 'text-gray-900 font-medium'
                       : 'text-gray-600'
                   )}
-                  aria-current={isLast || item.current ? 'page' : undefined}
+                  aria-current={isLast || ('current' in item && item.current) ? 'page' : undefined}
                 >
                   {item.label}
                 </span>

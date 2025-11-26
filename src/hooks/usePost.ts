@@ -3,7 +3,8 @@ import { useState, useEffect } from 'react';
 import { ApiHelper } from '@/utils/api';
 import { AuthUtils } from '@/utils/auth';
 import { Post, CreatePostRequest, UpdatePostRequest } from '@/types/post';
-import { Category } from '@/types/category'; // Giả định type Category
+import { Category } from '@/types/category'; 
+import toast from 'react-hot-toast';
 
 declare global {
   interface Window {
@@ -18,7 +19,7 @@ export function usePosts() {
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState('');
   const [xlsxLoaded, setXlsxLoaded] = useState(false);
-  const itemsPerPage = 5;
+  const itemsPerPage = 10;
 
   useEffect(() => {
     if (typeof window !== 'undefined' && !window.XLSX) {
@@ -35,7 +36,7 @@ export function usePosts() {
     setLoading(true);
     try {
       if (!AuthUtils.isAuthenticated()) {
-        alert('Vui lòng đăng nhập');
+        toast.error('Vui lòng đăng nhập');
         window.location.href = '/login';
         return;
       }
@@ -43,10 +44,10 @@ export function usePosts() {
       if (response.success && response.data) {
         setPosts(Array.isArray(response.data) ? response.data : []);
       } else {
-        alert(response.message || 'Không thể tải danh sách bài viết');
+        toast.error(response.message || 'Không thể tải danh sách bài viết');
       }
     } catch (error) {
-      alert('Lỗi khi tải danh sách bài viết');
+      toast.error('Lỗi khi tải danh sách bài viết');
     } finally {
       setLoading(false);
     }
@@ -58,10 +59,10 @@ export function usePosts() {
       if (response.success && response.data) {
         setCategories(Array.isArray(response.data) ? response.data : []);
       } else {
-        alert(response.message || 'Không thể tải danh sách danh mục');
+        toast.error(response.message || 'Không thể tải danh sách danh mục');
       }
     } catch (error) {
-      alert('Lỗi khi tải danh sách danh mục');
+      toast.error('Lỗi khi tải danh sách danh mục');
     }
   };
 
@@ -70,13 +71,13 @@ export function usePosts() {
     try {
       const response = await ApiHelper.delete(`/api/v1/posts/${post.id}`);
       if (response.success) {
-        alert('Xóa thành công!');
+        toast.success('Xóa thành công!');
         fetchPosts(currentPage, itemsPerPage);
       } else {
-        alert('Lỗi: ' + response.message);
+        toast.error('Lỗi: ' + response.message);
       }
     } catch (error: any) {
-      alert('Lỗi: ' + error.message);
+      toast.error('Lỗi: ' + error.message);
     }
   };
 
@@ -84,14 +85,14 @@ export function usePosts() {
     try {
       const response = await ApiHelper.post('/api/v1/posts', data);
       if (response.success) {
-        alert('Thêm thành công!');
+        toast.success('Thêm thành công!');
         fetchPosts(currentPage, itemsPerPage);
         return true;
       }
-      alert('Lỗi: ' + response.message);
+      toast.error('Lỗi: ' + response.message);
       return false;
     } catch (error: any) {
-      alert('Lỗi: ' + error.message);
+      toast.error('Lỗi: ' + error.message);
       return false;
     }
   };
@@ -100,21 +101,21 @@ export function usePosts() {
     try {
       const response = await ApiHelper.patch(`/api/v1/posts/${id}`, data);
       if (response.success) {
-        alert('Cập nhật thành công!');
+        toast.success('Cập nhật thành công!');
         fetchPosts(currentPage, itemsPerPage);
         return true;
       }
-      alert('Lỗi: ' + response.message);
+      toast.error('Lỗi: ' + response.message);
       return false;
     } catch (error: any) {
-      alert('Lỗi: ' + error.message);
+      toast.error('Lỗi: ' + error.message);
       return false;
     }
   };
 
   const handleExportExcel = () => {
     if (!window.XLSX) {
-      alert('Đang tải thư viện...');
+      toast.loading('Đang tải thư viện...');
       return;
     }
     const exportData = filteredPosts.map(post => ({
@@ -144,7 +145,7 @@ export function usePosts() {
         const jsonData = window.XLSX.utils.sheet_to_json(ws);
         
         if (jsonData.length === 0) {
-          alert('File trống');
+          toast.error('File trống');
           return;
         }
 
@@ -174,7 +175,7 @@ export function usePosts() {
         alert(`Thành công: ${success}\nThất bại: ${error}`);
         fetchPosts(currentPage, itemsPerPage);
       } catch (error) {
-        alert('Lỗi đọc file');
+        toast.error('Lỗi đọc file');
       }
     };
     reader.readAsBinaryString(file);

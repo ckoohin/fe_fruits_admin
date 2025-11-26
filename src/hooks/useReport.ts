@@ -7,6 +7,7 @@ import {
   NewCustomerTrend, StockLevel, InventoryValue, ImportHistory, ExportHistory,
   InventoryAdjustment, ReportPagination
 } from '@/types/report';
+import toast from 'react-hot-toast';
 
 export function useReports() {
   const [startDate, setStartDate] = useState('2025-01-01');
@@ -31,7 +32,6 @@ export function useReports() {
   const fetchAllReports = async () => {
     setLoading(true);
     try {
-      // Gọi tất cả API song song
       const [
         overviewRes, byPeriodRes, byPaymentRes, byProvinceRes,
         statusCountRes, topProductsRes, byCategoryRes, topCustomersRes,
@@ -71,7 +71,7 @@ export function useReports() {
       setInventoryAdjustments(inventoryAdjustmentsRes.data || { data: [], pagination: { currentPage: 1, limit: 20, totalPages: 1, totalItems: 0 } });
     } catch (error) {
       console.error('Error fetching reports:', error);
-      alert('Lỗi khi tải báo cáo');
+      toast.error('Lỗi khi tải báo cáo');
     } finally {
       setLoading(false);
     }

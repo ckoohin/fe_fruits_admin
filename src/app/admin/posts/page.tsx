@@ -63,7 +63,7 @@ export default function PostsPage() {
       category_id: post.category_id || '',
       is_published: post.is_published || false,
       published_at: post.published_at || new Date().toISOString(),
-      tags: [], // Cần lấy từ API nếu có quan hệ
+      tags: [], 
     });
     setShowModal(true);
   };

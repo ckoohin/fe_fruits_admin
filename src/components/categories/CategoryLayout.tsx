@@ -124,7 +124,7 @@ export function CategoryTable({ categories, allCategories, loading, onEdit, onDe
       sortable: false,
       render: (value: string | null) => (
         value ? (
-          <img src={value} alt="Category" className="w-20 h-12 object-cover rounded mx-auto" onError={(e) => { e.currentTarget.src = '/placeholder-image.png'; }} />
+          <img src={value} alt="Category" className="w-20 h-12 object-cover rounded mx-auto" onError={(e) => { e.currentTarget.src = 'https://via.placeholder.com/150x150.png?text=No+Image'; }} />
         ) : (
           <div className="w-20 h-12 bg-gray-200 rounded flex items-center justify-center mx-auto">
             <span className="text-gray-400 text-xs">No image</span>

@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { ApiHelper } from '@/utils/api';
 import { AuthUtils } from '@/utils/auth';
 import { Category, CreateCategoryRequest } from '@/types/category';
+import toast from 'react-hot-toast';
 
 declare global {
   interface Window {
@@ -18,7 +19,6 @@ export function useCategories() {
   const [xlsxLoaded, setXlsxLoaded] = useState(false);
   const itemsPerPage = 10;
 
-  // Load XLSX
   useEffect(() => {
     if (typeof window !== 'undefined' && !window.XLSX) {
       const script = document.createElement('script');
@@ -34,7 +34,7 @@ export function useCategories() {
     setLoading(true);
     try {
       if (!AuthUtils.isAuthenticated()) {
-        alert('Vui lòng đăng nhập');
+        toast.error('Vui lòng đăng nhập');
         window.location.href = '/login';
         return;
       }
@@ -42,10 +42,10 @@ export function useCategories() {
       if (response.success && response.data) {
         setCategories(Array.isArray(response.data) ? response.data : []);
       } else {
-        alert(response.message || 'Không thể tải dữ liệu');
+        toast.error(response.message || 'Không thể tải dữ liệu');
       }
     } catch (error) {
-      alert('Lỗi khi tải danh mục');
+      toast.error('Lỗi khi tải danh mục');
     } finally {
       setLoading(false);
     }
@@ -56,13 +56,13 @@ export function useCategories() {
     try {
       const response = await ApiHelper.delete(`api/v1/categories/${category.id}`);
       if (response.success) {
-        alert('Xóa thành công!');
+        toast.success('Xóa thành công!');
         fetchCategories();
       } else {
-        alert('Lỗi: ' + response.message);
+        toast.error('Lỗi: ' + response.message);
       }
     } catch (error: any) {
-      alert('Lỗi: ' + error.message);
+      toast.error('Lỗi: ' + error.message);
     }
   };
 
@@ -70,14 +70,14 @@ export function useCategories() {
     try {
       const response = await ApiHelper.post('api/v1/categories', data);
       if (response.success) {
-        alert('Thêm thành công!');
+        toast.success('Thêm thành công!');
         fetchCategories();
         return true;
       }
-      alert('Lỗi: ' + response.message);
+      toast.error('Lỗi: ' + response.message);
       return false;
     } catch (error: any) {
-      alert('Lỗi: ' + error.message);
+      toast.error('Lỗi: ' + error.message);
       return false;
     }
   };
@@ -96,22 +96,21 @@ export function useCategories() {
       
       const response = await ApiHelper.patch(`api/v1/categories/${id}`, updateData);
       if (response.success) {
-        alert('Cập nhật thành công!');
+        toast.success('Cập nhật thành công!');
         fetchCategories();
         return true;
       }
-      alert('Lỗi: ' + response.message);
+      toast.error('Lỗi: ' + response.message);
       return false;
     } catch (error: any) {
-      alert('Lỗi: ' + error.message);
+      toast.error('Lỗi: ' + error.message);
       return false;
     }
   };
 
-  // Excel Export
   const handleExportExcel = () => {
     if (!window.XLSX) {
-      alert('Đang tải thư viện...');
+      toast.loading('Đang tải thư viện...');
       return;
     }
     const exportData = filteredCategories.map(cat => {
@@ -135,7 +134,6 @@ export function useCategories() {
     window.XLSX.writeFile(wb, `danh-muc_${new Date().toISOString().split('T')[0]}.xlsx`);
   };
 
-  // Excel Import
   const handleImportExcel = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !window.XLSX) return;
@@ -148,7 +146,7 @@ export function useCategories() {
         const jsonData = window.XLSX.utils.sheet_to_json(ws);
         
         if (jsonData.length === 0) {
-          alert('File trống');
+          toast.error('File trống');
           return;
         }
 
@@ -181,17 +179,16 @@ export function useCategories() {
             error++;
           }
         }
-        alert(`Thành công: ${success}\nThất bại: ${error}`);
+        toast.success(`Thành công: ${success}\nThất bại: ${error}`);
         fetchCategories();
       } catch (error) {
-        alert('Lỗi đọc file');
+        toast.error('Lỗi đọc file');
       }
     };
     reader.readAsBinaryString(file);
     e.target.value = '';
   };
 
-  // Filter
   const filteredCategories = categories.filter(cat => {
     const query = searchQuery.toLowerCase().trim();
     if (!query) return true;

@@ -4,10 +4,6 @@ import { Permission } from '@/types/permission';
 import { AuthUtils } from '@/utils/auth';
 import { ApiHelper } from '@/utils/api';
 
-/**
- * Hook để lấy permissions của user hiện tại
- * Dùng để render sidebar/menu theo quyền và ProtectedRoute
- */
 export function usePermissions() {
   const [permissions, setPermissions] = useState<Permission[]>([]);
   const [loading, setLoading] = useState(true);
@@ -32,18 +28,18 @@ export function usePermissions() {
       // const cachedPermissions = AuthUtils.getPermissions();
       // if (cachedPermissions && cachedPermissions.length > 0) {
       //   setPermissions(cachedPermissions);
-      //   console.log('✅ Loaded permissions from cache:', cachedPermissions.length);
+      //   console.log('Loaded permissions from cache:', cachedPermissions.length);
       //   setLoading(false);
       //   return;
       // }
 
-      console.log('🔄 Fetching permissions for user roleId:', user.roleId);
+      console.log('Fetching permissions for user roleId:', user.roleId);
       const response = await ApiHelper.get<Permission[]>(
         `api/v1/roles/${user.roleId}/permissions`
       );
 
       if (response.success && response.data) {
-        console.log('✅ User permissions loaded:', response.data);
+        console.log('User permissions loaded:', response.data);
         const perms = Array.isArray(response.data) ? response.data : [];
         AuthUtils.setPermissions(perms);
         setPermissions(perms);

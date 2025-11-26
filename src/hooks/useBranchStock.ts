@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { ApiHelper } from '@/utils/api';
 import { AuthUtils } from '@/utils/auth';
 import { BranchStock } from '@/types/inventory';
+import toast from 'react-hot-toast';
 
 export function useBranchStock() {
   const [branchStock, setBranchStock] = useState<BranchStock[]>([]);
@@ -12,25 +13,23 @@ export function useBranchStock() {
   const [searchQuery, setSearchQuery] = useState('');
   const itemsPerPage = 10;
 
-  // Lấy branch_id từ user đăng nhập
   const user = AuthUtils.getUser();
   const userBranchId = user?.branchId;
 
-  // Fetch tồn kho của chi nhánh
   const fetchBranchStock = async (branchId: number) => {
     setLoading(true);
     try {
       if (!AuthUtils.isAuthenticated()) {
-        alert('Vui lòng đăng nhập!');
+        toast.error('Vui lòng đăng nhập!');
         setLoading(false);
         return;
       }
       if (!branchId && branchId !== 0) {
-        console.warn('⚠️ No valid branchId found, retrying authentication...');
+        console.warn('No valid branchId found, retrying authentication...');
         await AuthUtils.getUser();
         const updatedUser = AuthUtils.getUser();
         if (!updatedUser?.branchId && updatedUser?.branchId !== 0) {
-          alert('Vui lòng đảm bảo có thông tin chi nhánh sau khi đăng nhập!');
+          toast.error('Vui lòng đảm bảo có thông tin chi nhánh sau khi đăng nhập!');
           setLoading(false);
           return;
         }
@@ -40,20 +39,19 @@ export function useBranchStock() {
       if (response.success && response.data) {
         setBranchStock(Array.isArray(response.data) ? response.data : []);
       } else {
-        alert(response.message || 'Không thể tải dữ liệu tồn kho');
+        toast.error(response.message || 'Không thể tải dữ liệu tồn kho');
       }
     } catch (error) {
       console.error('Error fetching branch stock:', error);
-      alert('Lỗi khi tải tồn kho chi nhánh');
+      toast.error('Lỗi khi tải tồn kho chi nhánh');
     } finally {
       setLoading(false);
     }
   };
 
-  // Export Excel
   const handleExportExcel = () => {
     if (typeof window === 'undefined' || !window.XLSX) {
-      alert('Đang tải thư viện...');
+      toast.loading('Đang tải thư viện...');
       return;
     }
     const exportData = filteredBranchStock.map(item => ({
@@ -70,7 +68,6 @@ export function useBranchStock() {
     window.XLSX.writeFile(wb, `ton-kho-chi-nhanh_${new Date().toISOString().split('T')[0]}.xlsx`);
   };
 
-  // Filter
   const filteredBranchStock = branchStock.filter(item => {
     const query = searchQuery.toLowerCase().trim();
     if (!query) return true;
@@ -81,7 +78,6 @@ export function useBranchStock() {
     );
   });
 
-  // Pagination
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentBranchStock = filteredBranchStock.slice(indexOfFirstItem, indexOfLastItem);
@@ -93,24 +89,23 @@ export function useBranchStock() {
 
   useEffect(() => {
     if (!user) {
-      console.log('⚠️ User not available, waiting for authentication...');
+      console.log('User not available, waiting for authentication...');
       return;
     }
     
     let effectBranchId = userBranchId;
     
     if (!effectBranchId && effectBranchId !== 0) {
-      console.warn('⚠️ No branchId found, retrying authentication...');
+      console.warn('No branchId found, retrying authentication...');
       const updatedUser = AuthUtils.getUser();
       if (!updatedUser?.branchId && updatedUser?.branchId !== 0) {
-        alert('Vui lòng đảm bảo có thông tin chi nhánh sau khi đăng nhập!');
+        toast.error('Vui lòng đảm bảo có thông tin chi nhánh sau khi đăng nhập!');
         setLoading(false);
         return;
       }
       effectBranchId = updatedUser!.branchId;
     }
 
-    // Fetch branch name
     const fetchBranchName = async () => {
       try {
         const response = await ApiHelper.get<{ name: string }>(`api/v1/branches/${effectBranchId}`);
@@ -127,7 +122,7 @@ export function useBranchStock() {
 
     fetchBranchName();
     fetchBranchStock(effectBranchId);
-  }, [user?.id, userBranchId]); // ← Sửa dependency array
+  }, [user?.id, userBranchId]); 
 
   return {
     branchStock,

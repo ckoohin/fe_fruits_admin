@@ -99,7 +99,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           };
         }
 
-        // ✅ FIX: Map đầy đủ fields including branchId
         const userData: User = {
           id: String(apiUserData.id),
           name: apiUserData.name || 'Khách',
@@ -110,29 +109,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           lastLogin: apiUserData.last_login,
           created_at: apiUserData.created_at,
           updated_at: apiUserData.updated_at,
-          branchId: apiUserData.branch_id ? Number(apiUserData.branch_id) : undefined, // ✅ ADD THIS
+          branchId: apiUserData.branch_id ? Number(apiUserData.branch_id) : null,
+          isActive: apiUserData.is_active ?? true,       
+          status: apiUserData.status ?? "active",        
+          user_type: apiUserData.user_type ?? 1
         };
 
-        console.log('✅ Mapped User Data:', userData);
-        console.log('✅ branchId in User object:', userData.branchId);
-
-        // Save to localStorage
         AuthUtils.setAuth(token, userData);
 
-        // Verify localStorage
         const savedUserStr = localStorage.getItem('user');
-        console.log('💾 Saved to localStorage:', savedUserStr);
         if (savedUserStr) {
           const savedUser = JSON.parse(savedUserStr);
-          console.log('💾 branchId in localStorage:', savedUser.branchId);
         }
         
-        // Update state
         setUser(userData);
         setIsAuthenticated(true);
         setLoading(false);
 
-        console.log('✅ Login successful:', userData.email, 'branchId:', userData.branchId);
         return { 
           success: true, 
           message: response.message || 'Đăng nhập thành công' 
@@ -146,7 +139,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         };
       }
     } catch (error: any) {
-      console.error('❌ Login error:', error);
       setLoading(false);
       return {
         success: false,
@@ -167,7 +159,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     ApiHelper.authFetch('api/v1/auth/logout', { method: 'POST' })
       .catch((error) => console.warn('Logout API failed:', error));
 
-    console.log('✅ Logout completed');
   }, []);
 
   const hasRole = useCallback((roleId: string) => {

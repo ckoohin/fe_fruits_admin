@@ -1,5 +1,6 @@
 'use client';
 import React, { useEffect, useState } from 'react';
+import toast from 'react-hot-toast';
 import ExportKanbanBoard from '@/components/inventory/ExportKanban';
 import ExportDetailModal from '@/components/inventory/ExportDetailModel';
 import CreateExportModal from '@/components/inventory/CreateExportModel';
@@ -17,7 +18,6 @@ const useUserPermissions = () => {
       try {
         const user = AuthUtils.getUser();
         if (!user || !user.roleId) {
-          console.error('❌ User chưa login hoặc không có role');
           setPermissions([]);
           setLoading(false);
           return;
@@ -27,22 +27,22 @@ const useUserPermissions = () => {
         if (cachedPermissions && cachedPermissions.length > 0) {
           const slugs = cachedPermissions.map((p) => p.slug);
           setPermissions(slugs);
-          console.log('✅ Loaded permissions from cache:', slugs);
+          console.log('Loaded permissions from cache:', slugs);
         } else {
-          console.log('🔄 Fetching permissions for roleId:', user.roleId);
+          console.log('Fetching permissions for roleId:', user.roleId);
           const response = await ApiHelper.get(`api/v1/roles/${user.roleId}/permissions`);
           if (response.success && response.data) {
             AuthUtils.setPermissions(response.data);
             const slugs = response.data.map((p: any) => p.slug);
             setPermissions(slugs);
-            console.log('✅ Fetched permissions:', slugs);
+            console.log('Fetched permissions:', slugs);
           } else {
-            console.error('❌ Failed to fetch permissions:', response.message);
+            console.error('Failed to fetch permissions:', response.message);
             setPermissions([]);
           }
         }
       } catch (error) {
-        console.error('❌ Error loading permissions:', error);
+        console.error('Error loading permissions:', error);
         setPermissions([]);
       } finally {
         setLoading(false);
@@ -95,127 +95,129 @@ export default function ExportsPage() {
 
   const handleCreateExport = async (data: CreateExportRequest): Promise<boolean> => {
     if (!canCreate) {
-      alert('⚠️ Bạn không có quyền tạo yêu cầu chuyển kho');
+      toast.error('Bạn không có quyền tạo yêu cầu chuyển kho');
       setShowCreateModal(false);
-      return Promise.resolve(false);
+      return false;
     }
-    console.log('Gửi yêu cầu:', data);
+
     try {
       const success = await requestTransfer(data);
-      console.log('Kết quả requestTransfer:', success);
+
       if (success) {
-        alert('✅ Tạo yêu cầu chuyển kho thành công');
-        await fetchExports(); // Đảm bảo fetchExports là async nếu cần
+        toast.success('Tạo yêu cầu chuyển kho thành công');
+        await fetchExports();
       } else {
-        alert('❌ Tạo yêu cầu chuyển kho thất bại. Vui lòng thử lại.');
+        toast.error('Tạo yêu cầu chuyển kho thất bại. Vui lòng thử lại.');
       }
-      return Promise.resolve(success);
+
+      return success;
+
     } catch (error) {
-      console.error('❌ Lỗi khi tạo yêu cầu chuyển kho:', error);
-      alert('❌ Đã xảy ra lỗi khi tạo yêu cầu chuyển kho. Vui lòng thử lại.');
-      return Promise.resolve(false);
+      console.error('Lỗi khi tạo yêu cầu chuyển kho:', error);
+      toast.error('Đã xảy ra lỗi khi tạo yêu cầu chuyển kho.');
+      return false;
     } finally {
-      setShowCreateModal(false); // Luôn đóng modal
+      setShowCreateModal(false);
     }
   };
 
   const handleCancelExport = async (id: string, reason: string) => {
     if (!canCancel) {
-      alert('⚠️ Bạn không có quyền hủy yêu cầu chuyển kho');
+      toast.error('Bạn không có quyền hủy yêu cầu chuyển kho');
       return;
     }
     try {
       const success = await cancelExport(id, { reason });
       if (success) {
-        alert('✅ Hủy yêu cầu chuyển kho thành công');
+        toast.success('Hủy yêu cầu chuyển kho thành công');
         fetchExports();
         closeDetailModal();
       } else {
-        alert('❌ Hủy yêu cầu chuyển kho thất bại');
+        toast.error('Hủy yêu cầu chuyển kho thất bại');
       }
     } catch (error) {
-      console.error('❌ Lỗi khi hủy yêu cầu chuyển kho:', error);
-      alert('❌ Đã xảy ra lỗi khi hủy yêu cầu chuyển kho');
+      console.error('Lỗi khi hủy yêu cầu chuyển kho:', error);
+      toast.error('Đã xảy ra lỗi khi hủy yêu cầu chuyển kho');
     }
   };
 
   const handleReviewBranch = async (id: string, data: { action: 'approve' | 'reject'; note?: string }) => {
     if (!canReviewBranch) {
-      alert('⚠️ Bạn không có quyền duyệt yêu cầu chi nhánh');
+      toast.error('Bạn không có quyền duyệt yêu cầu chi nhánh');
       return;
     }
     try {
       const success = await reviewBranch(id, data);
       if (success) {
-        alert('✅ Duyệt yêu cầu chi nhánh thành công');
+        toast.success('Duyệt yêu cầu chi nhánh thành công');
         fetchExports();
         closeDetailModal();
       } else {
-        alert('❌ Duyệt yêu cầu chi nhánh thất bại');
+        toast.error('Duyệt yêu cầu chi nhánh thất bại');
       }
     } catch (error) {
-      console.error('❌ Lỗi khi duyệt yêu cầu chi nhánh:', error);
-      alert('❌ Đã xảy ra lỗi khi duyệt yêu cầu chi nhánh');
+      console.error('Lỗi khi duyệt yêu cầu chi nhánh:', error);
+      toast.error('Đã xảy ra lỗi khi duyệt yêu cầu chi nhánh');
     }
   };
 
   const handleReviewWarehouse = async (id: string, data: { action: 'approve' | 'reject'; note?: string }) => {
     if (!canReviewWarehouse) {
-      alert('⚠️ Bạn không có quyền duyệt kho tổng');
+      toast.error('Bạn không có quyền duyệt kho tổng');
       return;
     }
     try {
       const success = await reviewWarehouse(id, data);
       if (success) {
-        alert('✅ Duyệt kho tổng thành công');
+        toast.success('Duyệt kho tổng thành công');
         fetchExports();
         closeDetailModal();
       } else {
-        alert('❌ Duyệt kho tổng thất bại');
+        toast.error('Duyệt kho tổng thất bại');
       }
     } catch (error) {
-      console.error('❌ Lỗi khi duyệt kho tổng:', error);
-      alert('❌ Đã xảy ra lỗi khi duyệt kho tổng');
+      console.error('Lỗi khi duyệt kho tổng:', error);
+      toast.error('Đã xảy ra lỗi khi duyệt kho tổng');
     }
   };
 
   const handleShipTransfer = async (id: string) => {
     if (!canShip) {
-      alert('⚠️ Bạn không có quyền xác nhận gửi hàng');
+      toast.error('Bạn không có quyền xác nhận gửi hàng');
       return;
     }
     try {
       const success = await shipTransfer(id);
       if (success) {
-        alert('✅ Xác nhận gửi hàng thành công');
+        toast.success('Xác nhận gửi hàng thành công');
         fetchExports();
         closeDetailModal();
       } else {
-        alert('❌ Xác nhận gửi hàng thất bại');
+        toast.error('Xác nhận gửi hàng thất bại');
       }
     } catch (error) {
-      console.error('❌ Lỗi khi xác nhận gửi hàng:', error);
-      alert('❌ Đã xảy ra lỗi khi xác nhận gửi hàng');
+      console.error('Lỗi khi xác nhận gửi hàng:', error);
+      toast.error('Đã xảy ra lỗi khi xác nhận gửi hàng');
     }
   };
 
   const handleReceiveTransfer = async (id: string) => {
     if (!canReceive) {
-      alert('⚠️ Bạn không có quyền xác nhận nhận hàng');
+      toast.error('Bạn không có quyền xác nhận nhận hàng');
       return;
     }
     try {
       const success = await receiveTransfer(id);
       if (success) {
-        alert('✅ Xác nhận nhận hàng thành công');
+        toast.success('Xác nhận nhận hàng thành công');
         fetchExports();
         closeDetailModal();
       } else {
-        alert('❌ Xác nhận nhận hàng thất bại');
+        toast.error('Xác nhận nhận hàng thất bại');
       }
     } catch (error) {
-      console.error('❌ Lỗi khi xác nhận nhận hàng:', error);
-      alert('❌ Đã xảy ra lỗi khi xác nhận nhận hàng');
+      console.error('Lỗi khi xác nhận nhận hàng:', error);
+      toast.error('Đã xảy ra lỗi khi xác nhận nhận hàng');
     }
   };
 

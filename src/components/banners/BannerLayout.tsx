@@ -1,5 +1,3 @@
-
-
 'use client';
 import React, { useRef } from 'react';
 import CustomTable from '@/components/ui/CustomTable';
@@ -30,7 +28,6 @@ export default function BannerHeader({
   return (
     <div className="p-5 border-b border-gray-200 bg-white">
       <div className="flex items-center justify-between gap-6">
-        {/* Left: Title */}
         <div>
           <h2 className="text-lg font-semibold text-gray-900">Danh sách Banner</h2>
           <p className="text-sm text-gray-500 mt-0.5">
@@ -42,9 +39,7 @@ export default function BannerHeader({
           </p>
         </div>
         
-        {/* Right: Actions Group */}
         <div className="flex items-center gap-3">
-          {/* Search Input */}
           <div className="relative">
             <input
               type="text"
@@ -65,13 +60,10 @@ export default function BannerHeader({
             )}
           </div>
 
-          {/* Divider */}
           <div className="h-9 w-px bg-gray-300"></div>
 
-          {/* Hidden file input for import */}
           <input ref={fileInputRef} type="file" accept=".xlsx,.xls" onChange={onImport} className="hidden" />
 
-          {/* Import Excel Button */}
           <button
             onClick={() => fileInputRef.current?.click()}
             disabled={!xlsxLoaded}
@@ -84,7 +76,6 @@ export default function BannerHeader({
             <span>Nhập Excel</span>
           </button>
 
-          {/* Export Excel Button */}
           <button
             onClick={onExport}
             disabled={!xlsxLoaded || filteredCount === 0}
@@ -97,10 +88,8 @@ export default function BannerHeader({
             <span>Xuất Excel</span>
           </button>
 
-          {/* Divider */}
           <div className="h-9 w-px bg-gray-300"></div>
 
-          {/* Add Banner Button */}
           <button
             onClick={onAdd}
             className="flex items-center gap-2 px-5 py-2.5 text-sm bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-all font-medium shadow-sm hover:shadow"
@@ -144,7 +133,7 @@ export function BannerTable({ banners, loading, onEdit, onDelete }: BannerTableP
             alt="Banner" 
             className="w-32 h-16 object-cover rounded mx-auto"
             onError={(e) => {
-              e.currentTarget.src = '/placeholder-image.png';
+              e.currentTarget.src = 'https://via.placeholder.com/150x150.png?text=No+Image';
             }}
           />
         ) : (

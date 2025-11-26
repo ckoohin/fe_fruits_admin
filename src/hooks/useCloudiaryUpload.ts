@@ -16,7 +16,6 @@ export function useCloudinaryUpload() {
     setProgress(0);
 
     try {
-      // Bước 1: Lấy signature từ backend
       const signatureResponse = await ApiHelper.post('api/v1/uploads/signature', {
         paramsToSign: { folder }
       });
@@ -26,8 +25,7 @@ export function useCloudinaryUpload() {
       }
 
       const { timestamp, signature } = signatureResponse.data;
-
-      // Bước 2: Chuẩn bị form data
+      
       const formData = new FormData();
       formData.append('file', file);
       formData.append('timestamp', timestamp.toString());
@@ -35,7 +33,6 @@ export function useCloudinaryUpload() {
       formData.append('folder', folder);
       formData.append('api_key', process.env.NEXT_PUBLIC_CLOUDINARY_API_KEY || '');
 
-      // Bước 3: Upload lên Cloudinary
       const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || '';
       const uploadUrl = `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`;
 

@@ -70,6 +70,7 @@ export interface ApproveImportRequest {
   action: 'approve' | 'reject' | 'cancel';
   supplier_id?: number;
   reason?: string; // Lý do cho mọi hành động
+  note?: string;
   details?: {
     id: number;
     import_quantity: number;

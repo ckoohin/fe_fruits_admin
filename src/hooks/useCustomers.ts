@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { ApiHelper } from '@/utils/api';
 import { AuthUtils } from '@/utils/auth';
 import { Customer } from '@/types/customer';
+import toast from 'react-hot-toast';
 
 declare global {
   interface Window {
@@ -13,7 +14,6 @@ declare global {
 export function useCustomers() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
-  const [totalPages, setTotalPages] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState('');
   const [xlsxLoaded, setXlsxLoaded] = useState(false);
@@ -34,26 +34,25 @@ export function useCustomers() {
     setLoading(true);
     try {
       if (!AuthUtils.isAuthenticated()) {
-        alert('Vui lòng đăng nhập');
+        toast.error('Vui lòng đăng nhập');
         window.location.href = '/login';
         return;
       }
 
       const response = await ApiHelper.get<any>('api/v1/customers');
 
-      // Xử lý 2 trường hợp: có hoặc không có { success, data }
       if (response.success && Array.isArray(response.data)) {
         setCustomers(response.data);
       } else if (Array.isArray(response)) {
         setCustomers(response);
       } else {
         console.error('Dữ liệu trả về không hợp lệ:', response);
-        alert('Không thể tải danh sách khách hàng.');
+        toast.error('Không thể tải danh sách khách hàng.');
         setCustomers([]);
       }
     } catch (error) {
       console.error('Error fetching customers:', error);
-      alert('Lỗi khi tải khách hàng');
+      toast.error('Lỗi khi tải khách hàng');
     } finally {
       setLoading(false);
     }
@@ -63,14 +62,14 @@ export function useCustomers() {
     try {
       const response = await ApiHelper.post('api/v1/customers', data);
       if (response.success) {
-        alert('Thêm khách hàng thành công!');
+        toast.success('Thêm khách hàng thành công!');
         fetchCustomers();
       } else {
-        alert(response.message || 'Thêm khách hàng thất bại');
+        toast.error(response.message || 'Thêm khách hàng thất bại');
       }
     } catch (error) {
       console.error('Error adding customer:', error);
-      alert('Không thể thêm khách hàng');
+      toast.error('Không thể thêm khách hàng');
     }
   };
 
@@ -78,14 +77,14 @@ export function useCustomers() {
     try {
       const response = await ApiHelper.put(`api/v1/customers/${id}`, data);
       if (response.success) {
-        alert('Cập nhật khách hàng thành công!');
+        toast.success('Cập nhật khách hàng thành công!');
         fetchCustomers();
       } else {
-        alert(response.message || 'Cập nhật thất bại');
+        toast.error(response.message || 'Cập nhật thất bại');
       }
     } catch (error) {
       console.error('Error updating customer:', error);
-      alert('Không thể cập nhật khách hàng');
+      toast.error('Không thể cập nhật khách hàng');
     }
   };
 
@@ -94,14 +93,15 @@ export function useCustomers() {
     try {
       const response = await ApiHelper.delete(`api/v1/customers/${id}`);
       if (response.success) {
-        alert('Xóa khách hàng thành công!');
+        
+        toast.success('Xóa khách hàng thành công!');
         setCustomers(prev => prev.filter(c => c.id !== id));
       } else {
-        alert(response.message || 'Xóa thất bại');
+        toast.error(response.message || 'Xóa thất bại');
       }
     } catch (error) {
       console.error('Error deleting customer:', error);
-      alert('Không thể xóa khách hàng');
+      toast.error('Không thể xóa khách hàng');
     }
   };
 
@@ -110,25 +110,26 @@ export function useCustomers() {
       const response = await ApiHelper.get(`api/v1/customers/${id}`);
       if (response.success && response.data) {
         return response.data as Customer;
-      } else if (response) {
-        return response as Customer;
-      }
+      } 
+      // else if (response) {
+      //   return response as Customer;
+      // }
       return null;
     } catch (error) {
       console.error('Error fetching customer detail:', error);
-      alert('Không thể tải thông tin khách hàng');
+      toast.error('Không thể tải thông tin khách hàng');
       return null;
     }
   };
 
   const handleExportExcel = () => {
     if (!window.XLSX) {
-      alert('Đang tải thư viện Excel, vui lòng thử lại sau.');
+      toast.error('Đang tải thư viện Excel, vui lòng thử lại sau.');
       return;
     }
 
     if (customers.length === 0) {
-      alert('Không có dữ liệu để xuất Excel.');
+      toast.error('Không có dữ liệu để xuất Excel.');
       return;
     }
 
@@ -163,7 +164,7 @@ export function useCustomers() {
   };
 
   const handleImportExcel = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    alert('Chức năng import khách hàng chưa được triển khai.');
+    toast.error('Chức năng import khách hàng chưa được triển khai.');
     e.target.value = '';
   };
 
@@ -177,18 +178,15 @@ export function useCustomers() {
     );
   });
 
-  // Pagination
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentCustomers = filteredCustomers.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(filteredCustomers.length / itemsPerPage) || 1;
 
-  // Reset page when search changes
   useEffect(() => {
     setCurrentPage(1);
-    setTotalPages(0);
   }, [searchQuery]);
 
-  // Load dữ liệu khi mount
   useEffect(() => {
     fetchCustomers();
   }, []);

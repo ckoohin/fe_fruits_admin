@@ -37,7 +37,6 @@ export default function StaffPage() {
   const [roles, setRoles] = useState<{ id: number; name: string }[]>([]);
   const [branches, setBranches] = useState<{ id: number; name: string }[]>([]);
 
-  // Fetch roles and branches using ApiHelper
   useEffect(() => {
     const fetchRoles = async () => {
       try {
@@ -85,7 +84,7 @@ export default function StaffPage() {
 
   const handleEdit = (staffItem: Staff) => {
     setEditingStaff(staffItem);
-    // Ánh xạ role_id từ role_name trong danh sách roles
+    
     const role = roles.find(r => r.name === staffItem.role_name);
     setFormData({
       name: staffItem.name || '',

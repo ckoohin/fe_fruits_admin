@@ -7,6 +7,8 @@ export interface Order {
   total_amount: string | number;
   customer_name?: string;
   customer_phone?: string;
+  recipient_name?: string;
+  recipient_phone?: string;
   payment_method?: string | null;
   payment_status?: string;
   customer_real_name?: string;

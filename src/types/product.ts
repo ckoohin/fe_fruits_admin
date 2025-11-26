@@ -44,7 +44,7 @@ export interface Product {
   min_stock: number;
   track_inventory: boolean;
   is_fresh: boolean;
-  shelf_life_days?: number;
+  shelf_life_days: number;
   storage_conditions: string;
   origin: string;
   harvest_season: string;
@@ -54,7 +54,6 @@ export interface Product {
   seo_description?: string;
   created_by: string;
   deleted_at: string | null;
-
   category_name: string;
   unit_name: string;
   variants: ProductVariant[];

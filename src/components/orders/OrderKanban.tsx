@@ -1,221 +1,215 @@
-import React, { useState } from 'react';
-import { Eye, Phone, MapPin, GripVertical, Package } from 'lucide-react';
-import OrderStatus from './OrderStatus';
+'use client';
+import React from 'react';
+import { Order, OrderStatus } from '@/types/order';
+import { KANBAN_COLUMNS } from '@/hooks/useOrders';
+import { useOrders } from '@/hooks/useOrders';
 
-interface Order {
-  id: number;
-  order_number: string;
-  customer_name: string;
-  customer_phone: string;
-  total_amount: number;
-  order_status: string;
-  payment_status: string;
-  payment_method: string;
-  created_at: string;
-  shipping_address: string;
+interface OrderKanbanBoardProps {
+  onCardClick: (order: Order) => void;
 }
 
-interface OrderKanbanProps {
-  orders: Order[];
-  loading?: boolean;
-  onViewDetail: (orderId: number) => void;
-  onStatusChange?: (orderId: number, newStatus: string) => void;
-}
-
-const COLUMNS = [
-  { id: 'pending', label: 'Chờ xác nhận', color: 'bg-yellow-50 border-yellow-200', badge: 'bg-yellow-500' },
-  { id: 'confirmed', label: 'Đã xác nhận', color: 'bg-blue-50 border-blue-200', badge: 'bg-blue-500' },
-  { id: 'processing', label: 'Đang xử lý', color: 'bg-indigo-50 border-indigo-200', badge: 'bg-indigo-500' },
-  { id: 'shipping', label: 'Đang giao', color: 'bg-purple-50 border-purple-200', badge: 'bg-purple-500' },
-  { id: 'delivered', label: 'Đã giao', color: 'bg-green-50 border-green-200', badge: 'bg-green-500' },
-  { id: 'cancelled', label: 'Đã hủy', color: 'bg-red-50 border-red-200', badge: 'bg-red-500' },
-];
-
-const OrderKanban: React.FC<OrderKanbanProps> = ({ 
-  orders, 
-  loading, 
-  onViewDetail,
-  onStatusChange 
-}) => {
-  const [draggedOrderId, setDraggedOrderId] = useState<number | null>(null);
-  const [dragOverColumn, setDragOverColumn] = useState<string | null>(null);
-
-  const formatCurrency = (amount: number) =>
-    new Intl.NumberFormat('vi-VN', {
-      style: 'currency',
-      currency: 'VND',
-    }).format(amount);
-
-  const formatDate = (dateString: string) =>
-    new Date(dateString).toLocaleDateString('vi-VN', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-    });
-
-  const getOrdersByStatus = (status: string) =>
-    orders.filter(order => order.order_status === status);
-
-  const handleDragStart = (e: React.DragEvent, orderId: number) => {
-    setDraggedOrderId(orderId);
-    e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('orderId', orderId.toString());
-  };
-
-  const handleDragEnd = () => {
-    setDraggedOrderId(null);
-    setDragOverColumn(null);
-  };
-
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-  };
-
-  const handleDragEnter = (columnId: string) => setDragOverColumn(columnId);
-  const handleDragLeave = () => setDragOverColumn(null);
-
-  const handleDrop = (e: React.DragEvent, status: string) => {
-    e.preventDefault();
-    const orderId = parseInt(e.dataTransfer.getData('orderId'));
-    if (onStatusChange && orderId) {
-      const order = orders.find(o => o.id === orderId);
-      if (order && order.order_status !== status) {
-        onStatusChange(orderId, status);
-      }
-    }
-    setDragOverColumn(null);
-    setDraggedOrderId(null);
-  };
+export default function OrderKanbanBoard({ onCardClick }: OrderKanbanBoardProps) {
+  const { orders, loading, getOrdersByStatus } = useOrders();
 
   if (loading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-        {COLUMNS.map((column) => (
-          <div key={column.id} className={`rounded-lg border-2 ${column.color} p-4`}>
-            <div className="animate-pulse">
-              <div className="h-6 bg-gray-300 rounded mb-4"></div>
-              {[...Array(3)].map((_, i) => (
-                <div key={i} className="h-32 bg-gray-200 rounded mb-3"></div>
-              ))}
-            </div>
-          </div>
-        ))}
+      <div className="flex items-center justify-center h-96">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-500">Đang tải dữ liệu...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-      {COLUMNS.map((column) => {
-        const columnOrders = getOrdersByStatus(column.id);
-        const isOver = dragOverColumn === column.id;
-
-        return (
-          <div
+    <div className="px-6 py-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
+        {KANBAN_COLUMNS.map((column) => (
+          <KanbanColumn
             key={column.id}
-            className={`rounded-lg border-2 p-4 min-h-[600px] transition-all ${column.color} ${
-              isOver ? 'ring-2 ring-green-500 ring-opacity-50 scale-105' : ''
-            }`}
-            onDragOver={handleDragOver}
-            onDragEnter={() => handleDragEnter(column.id)}
-            onDragLeave={handleDragLeave}
-            onDrop={(e) => handleDrop(e, column.id)}
-          >
-            {/* Column Header */}
-            <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-300">
-              <h3 className="font-semibold text-gray-900">{column.label}</h3>
-              <span className={`${column.badge} text-white text-xs font-bold px-2.5 py-1 rounded-full`}>
-                {columnOrders.length}
-              </span>
-            </div>
-
-            {/* Cards */}
-            <div className="space-y-3">
-              {columnOrders.length === 0 ? (
-                <div className="text-center py-12 text-gray-400 text-sm">
-                  <Package className="w-10 h-10 mx-auto mb-2 opacity-50" />
-                  Không có đơn hàng
-                </div>
-              ) : (
-                columnOrders.map((order) => (
-                  <div
-                    key={order.id}
-                    draggable
-                    onDragStart={(e) => handleDragStart(e, order.id)}
-                    onDragEnd={handleDragEnd}
-                    className={`bg-white rounded-lg shadow-sm border border-gray-200 p-3 cursor-move hover:shadow-lg transition-all ${
-                      draggedOrderId === order.id ? 'opacity-50 scale-95' : 'hover:scale-102'
-                    }`}
-                  >
-                    {/* Header */}
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <GripVertical className="w-4 h-4 text-gray-400" />
-                        <span className="text-sm font-semibold text-gray-900">
-                          {order.order_number}
-                        </span>
-                      </div>
-                      <OrderStatus status={order.payment_status as any} type="payment" />
-                    </div>
-
-                    {/* Customer Info */}
-                    <div className="space-y-1.5 mb-3">
-                      <div className="flex items-start gap-2">
-                        <Phone className="w-3.5 h-3.5 text-gray-400 mt-0.5 flex-shrink-0" />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-gray-900 truncate">
-                            {order.customer_name}
-                          </p>
-                          <p className="text-xs text-gray-500">{order.customer_phone}</p>
-                        </div>
-                      </div>
-
-                      <div className="flex items-start gap-2">
-                        <MapPin className="w-3.5 h-3.5 text-gray-400 mt-0.5 flex-shrink-0" />
-                        <p className="text-xs text-gray-500 line-clamp-2">
-                          {order.shipping_address}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Amount & Date */}
-                    <div className="flex items-center justify-between mb-3 pt-3 border-t border-gray-100">
-                      <span className="text-sm font-bold text-green-600">
-                        {formatCurrency(order.total_amount)}
-                      </span>
-                      <span className="text-xs text-gray-500">
-                        {formatDate(order.created_at)}
-                      </span>
-                    </div>
-
-                    {/* View Detail Button */}
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onViewDetail(order.id);
-                      }}
-                      className="w-full flex items-center justify-center gap-1 px-3 py-2 text-sm bg-green-50 text-green-700 rounded hover:bg-green-100 transition-colors font-medium"
-                    >
-                      <Eye className="w-4 h-4" />
-                      Xem chi tiết
-                    </button>
-                  </div>
-                ))
-              )}
-            </div>
-
-            {/* Drop Zone Indicator */}
-            {isOver && (
-              <div className="mt-3 p-4 border-2 border-dashed border-green-500 rounded-lg bg-green-50 text-center text-sm text-green-700 font-medium">
-                Thả đơn hàng vào đây
-              </div>
-            )}
-          </div>
-        );
-      })}
+            column={column}
+            orders={getOrdersByStatus(column.id as OrderStatus)}
+            onCardClick={onCardClick}
+          />
+        ))}
+      </div>
     </div>
   );
-};
+}
 
-export default OrderKanban;
+interface KanbanColumnProps {
+  column: { id: string; title: string; color: string; bgColor: string; borderColor: string };
+  orders: Order[];
+  onCardClick: (order: Order) => void;
+}
+
+function KanbanColumn({ column, orders, onCardClick }: KanbanColumnProps) {
+  const getColumnStyle = (id: string) => {
+    const styles: Record<string, { headerBg: string; headerText: string; badgeBg: string; cardAccent: string }> = {
+      pending: {
+        headerBg: 'bg-yellow-500',
+        headerText: 'text-white',
+        badgeBg: 'bg-white/20',
+        cardAccent: 'border-l-yellow-400'
+      },
+      confirmed: {
+        headerBg: 'bg-blue-500',
+        headerText: 'text-white',
+        badgeBg: 'bg-white/20',
+        cardAccent: 'border-l-blue-400'
+      },
+      processing: {
+        headerBg: 'bg-indigo-500',
+        headerText: 'text-white',
+        badgeBg: 'bg-white/20',
+        cardAccent: 'border-l-indigo-400'
+      },
+      shipped: {
+        headerBg: 'bg-purple-500',
+        headerText: 'text-white',
+        badgeBg: 'bg-white/20',
+        cardAccent: 'border-l-purple-400'
+      },
+      completed: {
+        headerBg: 'bg-green-500',
+        headerText: 'text-white',
+        badgeBg: 'bg-white/20',
+        cardAccent: 'border-l-green-400'
+      },
+      cancelled: {
+        headerBg: 'bg-gray-400',
+        headerText: 'text-white',
+        badgeBg: 'bg-white/20',
+        cardAccent: 'border-l-gray-400'
+      }
+    };
+    return styles[id] || styles.pending;
+  };
+
+  const style = getColumnStyle(column.id);
+
+  return (
+    <div className="flex flex-col h-full">
+      <div className={`${style.headerBg} rounded-t-lg px-3 py-2.5`}>
+        <div className="flex items-center justify-between">
+          <h3 className={`font-semibold ${style.headerText} text-sm`}>
+            {column.title}
+          </h3>
+          <span className={`${style.badgeBg} ${style.headerText} px-2 py-0.5 rounded-full text-xs font-bold`}>
+            {orders.length}
+          </span>
+        </div>
+      </div>
+      
+      <div className="bg-gray-50 rounded-b-lg p-2 flex-1 overflow-y-auto min-h-[500px] max-h-[calc(100vh-250px)] space-y-2">
+        {orders.length === 0 ? (
+          <div className="flex items-center justify-center h-32 text-gray-400 text-xs">
+            Không có đơn hàng
+          </div>
+        ) : (
+          orders.map((order) => (
+            <OrderCard
+              key={order.id}
+              order={order}
+              onClick={() => onCardClick(order)}
+              cardAccent={style.cardAccent}
+            />
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
+
+interface OrderCardProps {
+  order: Order;
+  onClick: () => void;
+  cardAccent: string;
+}
+
+function OrderCard({ order, onClick, cardAccent }: OrderCardProps) {
+  const formatCurrency = (amount: string | number) => {
+    return new Intl.NumberFormat('vi-VN', {
+      style: 'currency',
+      currency: 'VND',
+    }).format(Number(amount));
+  };
+
+  const formatDate = (dateString: string | null | undefined) => {
+    if (!dateString) return 'Chưa có ngày';
+    return new Date(dateString).toLocaleDateString('vi-VN', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    });
+  };
+
+  return (
+    <div
+      onClick={onClick}
+      className={`bg-white rounded-lg p-3 shadow-sm hover:shadow-md transition-all cursor-pointer border-l-4 ${cardAccent} hover:scale-[1.02]`}
+    >
+      <div className="flex items-start justify-between mb-2">
+        <div className="flex-1">
+          <h4 className="font-semibold text-sm text-gray-900 mb-0.5">
+            {order.order_number || order.order_code || `ĐH #${order.id}`}
+          </h4>
+          <p className="text-xs text-gray-500">
+            {formatDate(order.order_date)}
+          </p>
+        </div>
+        <span className="text-xs text-gray-400">#{order.id}</span>
+      </div>
+
+      {order.customer_name && (
+        <div className="flex items-center gap-1 mb-2 text-xs text-gray-600 bg-gray-50 px-2 py-1 rounded">
+          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+          </svg>
+          <span className="truncate font-medium">{order.customer_name}</span>
+        </div>
+      )}
+
+      {order.customer_phone && (
+        <div className="flex items-center gap-1 mb-2 text-xs text-gray-600 bg-gray-50 px-2 py-1 rounded">
+          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+          </svg>
+          <span className="truncate">{order.customer_phone}</span>
+        </div>
+      )}
+
+      <div className="bg-blue-50 rounded px-2 py-1.5 mb-2">
+        <p className="text-xs text-gray-600 mb-0.5">Tổng tiền</p>
+        <p className="font-bold text-sm text-blue-700">
+          {formatCurrency(order.total_amount)}
+        </p>
+      </div>
+
+      {order.payment_method && (
+        <div className="flex items-center justify-between text-xs mb-2">
+          <span className="text-gray-500">Thanh toán:</span>
+          <span className="font-medium text-gray-700 bg-purple-50 px-2 py-0.5 rounded">
+            {order.payment_method}
+          </span>
+        </div>
+      )}
+
+      {order.notes && (
+        <p className="text-xs text-gray-600 line-clamp-2 mb-2 italic bg-amber-50 p-1.5 rounded">
+          "{order.notes}"
+        </p>
+      )}
+
+      <div className="flex items-center justify-between text-xs text-gray-500 pt-2 border-t border-gray-100">
+        <span className="truncate">{order.created_by || 'Hệ thống'}</span>
+        {order.items && order.items.length > 0 && (
+          <span className="font-medium text-blue-600 ml-2">
+            {order.items.length} SP
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}

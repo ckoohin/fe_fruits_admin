@@ -19,6 +19,8 @@ import {
   ExportHistory,
   InventoryAdjustment,
 } from '@/types/report';
+import * as XLSX from 'xlsx';
+import { saveAs } from 'file-saver';
 
 const COLORS = ['#22c55e', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 
@@ -66,7 +68,131 @@ const FruitsAdminReport = () => {
 
   const exportToPDF = () => window.print();
 
-  const exportToExcel = () => alert('Tính năng xuất Excel đang được phát triển');
+  const exportToExcel = () => {
+    if (!activeTab) return;
+
+    let data: any[][] = [];
+    let filename = `bao-cao_${activeTab}_${new Date().toISOString().slice(0, 10)}`;
+    let sheetName = 'Báo cáo';
+
+    const formatCurrency = (value: number = 0) =>
+      new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', minimumFractionDigits: 0 }).format(value);
+
+    const formatDate = (date: any) => {
+      try { return new Date(date).toLocaleDateString('vi-VN'); }
+      catch { return ''; }
+    };
+
+    switch (activeTab) {
+      case 'overview':
+        if (!revenueOverview) return alert('Chưa có dữ liệu tổng quan');
+        filename = `bao-cao-tong-quan_${formatDate(new Date())}`;
+        sheetName = 'Tổng quan';
+        data = [
+          ['CHỈ SỐ', 'GIÁ TRỊ', 'GHI CHÚ'],
+          ['Tổng doanh thu', formatCurrency(revenueOverview.total_revenue), 'Doanh thu gộp'],
+          ['Đơn hàng', revenueOverview.total_orders, 'Tổng số đơn'],
+          ['Giá trị trung bình đơn', formatCurrency(revenueOverview.average_order_value), 'AOV'],
+          ['Doanh thu thuần', formatCurrency(revenueOverview.net_sales), 'Sau giảm giá'],
+          ['Phí vận chuyển', formatCurrency(revenueOverview.total_shipping), ''],
+          ['Giảm giá', formatCurrency(revenueOverview.total_discount), ''],
+          ['Giá trị kho', formatCurrency(inventoryValue?.total_inventory_value || 0), 'Tổng hàng tồn'],
+        ];
+        break;
+
+      case 'revenue':
+        if (!revenueByPeriod || revenueByPeriod.length === 0) return alert('Chưa có dữ liệu doanh thu');
+        filename = `bao-cao-doanh-thu_${formatDate(new Date())}`;
+        sheetName = 'Doanh thu';
+        data = revenueByPeriod.map((d: any) => [
+          d.period || formatDate(d.date),
+          d.revenue || 0,
+          d.order_count || 0,
+        ]);
+        data.unshift(['Kỳ', 'Doanh thu (₫)', 'Số đơn']);
+        break;
+
+      case 'products':
+        if (!topSellingProducts || topSellingProducts.length === 0) return alert('Chưa có dữ liệu sản phẩm');
+        filename = `bao-cao-san-pham_${formatDate(new Date())}`;
+        sheetName = 'Sản phẩm';
+        data = topSellingProducts.map((p: any, i: number) => [
+          i + 1,
+          p.product_name || 'Không tên',
+          p.sku || '-',
+          p.total_quantity_sold || 0,
+          p.total_revenue_generated || 0,
+          Math.round((p.total_revenue_generated || 0) / (p.total_quantity_sold || 1)),
+        ]);
+        data.unshift(['Hạng', 'Tên sản phẩm', 'SKU', 'Đã bán', 'Doanh thu (₫)', 'Giá TB']);
+        break;
+
+      case 'customers':
+        if (!topCustomers || topCustomers.length === 0) return alert('Chưa có dữ liệu khách hàng');
+        filename = `bao-cao-khach-hang_${formatDate(new Date())}`;
+        sheetName = 'Khách hàng';
+        data = topCustomers.map((c: any, i: number) => [
+          i + 1,
+          c.customer_name || 'Khách lẻ',
+          c.customer_phone || '-',
+          c.customer_email || '-',
+          c.total_orders || 0,
+          c.total_spent || 0,
+          c.lastOrder ? formatDate(c.lastOrder) : '-',
+        ]);
+        data.unshift(['Hạng', 'Họ tên', 'SĐT', 'Email', 'Tổng đơn', 'Tổng chi (₫)', 'Mua lần cuối']);
+        break;
+
+      case 'inventory':
+        if (!stockLevels || stockLevels.length === 0) return alert('Chưa có dữ liệu tồn kho');
+        filename = `bao-cao-ton-kho_${formatDate(new Date())}`;
+        sheetName = 'Tồn kho';
+        const displayStock = showLowStockOnly
+          ? stockLevels.filter((s: any) => s.quantity < s.min_stock)
+          : stockLevels;
+
+        data = displayStock.map((s: any, i: number) => [
+          i + 1,
+          s.product_name,
+          s.variant_name || '',
+          s.sku || '-',
+          s.branch_name || 'Tất cả',
+          s.quantity,
+          s.min_stock,
+          s.quantity * s.cost_price,
+          s.quantity < s.min_stock ? 'Sắp hết' : 'Bình thường',
+        ]);
+        data.unshift(['STT', 'Sản phẩm', 'Biến thể', 'SKU', 'Chi nhánh', 'Tồn kho', 'Tối thiểu', 'Giá trị (₫)', 'Trạng thái']);
+        break;
+
+      default:
+        return;
+    }
+
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet(data);
+
+    const colWidths = data[0].map((_, i) =>
+      Math.max(...data.map(row => String(row[i] || '').length))
+    );
+    ws['!cols'] = colWidths.map(w => ({ wch: Math.min(w + 6, 50) }));
+
+    const range = XLSX.utils.decode_range(ws['!ref'] || '');
+    for (let c = range.s.c; c <= range.e.c; c++) {
+      const cell = ws[XLSX.utils.encode_cell({ r: 0, c })];
+      if (cell) {
+        cell.s = {
+          font: { bold: true, color: { rgb: 'FFFFFF' } },
+          fill: { fgColor: { rgb: '10B981' } },
+          alignment: { horizontal: 'center', vertical: 'center' },
+        };
+      }
+    }
+
+    XLSX.utils.book_append_sheet(wb, ws, sheetName.slice(0, 31));
+    const buffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+    saveAs(new Blob([buffer]), `${filename}.xlsx`);
+  };
 
   const StatCard = ({ title, value, icon: Icon, color, subtitle, trend }: any) => (
     <div className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
@@ -115,87 +241,7 @@ const FruitsAdminReport = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto">
-        {/* <div className="mb-8 flex items-center justify-between">
-          <div className="flex gap-3">
-            <button
-              onClick={refetch}
-              disabled={loading}
-              className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
-            >
-              <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
-              Làm mới
-            </button>
-            <button
-              onClick={exportToPDF}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
-            >
-              <Printer className="w-5 h-5" />
-              In báo cáo
-            </button>
-            <button
-              onClick={exportToExcel}
-              className="flex items-center gap-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
-            >
-              <Download className="w-5 h-5" />
-              Xuất Excel
-            </button>
-          </div>
-        </div> */}
-
-        {/* Date Filter */}
-        <div className="bg-white rounded-lg shadow-md p-4 mb-6">
-          <div className="flex flex-wrap items-center gap-4">
-            <div className="flex items-center gap-2">
-              <Calendar className="w-5 h-5 text-gray-600" />
-              <span className="font-medium text-gray-700">Thời gian:</span>
-            </div>
-            <input
-              type="date"
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-            />
-            <span className="text-gray-600">đến</span>
-            <input
-              type="date"
-              value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-            />
-            <select
-              value={selectedPeriod}
-              onChange={(e) => setSelectedPeriod(e.target.value as any)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-            >
-              <option value="day">Theo ngày</option>
-              <option value="week">Theo tuần</option>
-              <option value="month">Theo tháng</option>
-              <option value="year">Theo năm</option>
-            </select>
-            <button
-              onClick={refetch}
-              className="px-6 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
-            >
-              Áp dụng
-            </button>
-            <button
-              onClick={exportToPDF}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
-            >
-              <Printer className="w-5 h-5" />
-              In báo cáo
-            </button>
-            <button
-              onClick={exportToExcel}
-              className="flex items-center gap-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
-            >
-              <Download className="w-5 h-5" />
-              Xuất Excel
-            </button>
-          </div>
-        </div>
-
-        {/* Loading Overlay */}
+        
         {loading && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg p-6 flex items-center gap-3">
@@ -205,36 +251,61 @@ const FruitsAdminReport = () => {
           </div>
         )}
 
-        {/* Tabs */}
         <div className="bg-white rounded-lg shadow-md mb-6">
-          <div className="flex border-b overflow-x-auto">
-            {[
-              { id: 'overview', label: 'Tổng Quan', icon: TrendingUp },
-              { id: 'revenue', label: 'Doanh Thu', icon: DollarSign },
-              { id: 'products', label: 'Sản Phẩm', icon: Package },
-              { id: 'customers', label: 'Khách Hàng', icon: Users },
-              { id: 'inventory', label: 'Kho Hàng', icon: FileText }
-            ].map(tab => (
+          <div className="flex items-center justify-between border-b">
+            <div className="flex overflow-x-auto scrollbar-hide">
+              {[
+                { id: 'overview', label: 'Tổng Quan', icon: TrendingUp },
+                { id: 'revenue', label: 'Doanh Thu', icon: DollarSign },
+                { id: 'products', label: 'Sản Phẩm', icon: Package },
+                { id: 'customers', label: 'Khách Hàng', icon: Users },
+              ].map(tab => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`flex items-center gap-2 px-5 py-4 font-medium transition-all whitespace-nowrap border-b-2 ${
+                    activeTab === tab.id
+                      ? 'border-green-500 text-green-600 bg-green-50/50'
+                      : 'border-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                  }`}
+                >
+                  <tab.icon className="w-5 h-5" />
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+
+            <div className="flex items-center gap-2 pr-4">
               <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-6 py-4 font-medium transition-colors whitespace-nowrap ${
-                  activeTab === tab.id
-                    ? 'border-b-2 border-green-500 text-green-600'
-                    : 'text-gray-600 hover:text-gray-800'
-                }`}
+                onClick={refetch}
+                disabled={loading}
+                className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <tab.icon className="w-5 h-5" />
-                {tab.label}
+                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                Làm mới
               </button>
-            ))}
+
+              <button
+                onClick={exportToPDF}
+                className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-blue-700 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
+              >
+                <Printer className="w-4 h-4" />
+                In báo cáo
+              </button>
+
+              <button
+                onClick={exportToExcel}
+                className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors shadow-sm"
+              >
+                <Download className="w-4 h-4" />
+                Xuất Excel
+              </button>
+            </div>
           </div>
         </div>
 
-        {/* Overview Tab */}
         {activeTab === 'overview' && revenueOverview && (
           <div className="space-y-6">
-            {/* Key Metrics */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               <StatCard
                 title="Tổng Doanh Thu"
@@ -270,7 +341,6 @@ const FruitsAdminReport = () => {
               />
             </div>
 
-            {/* Revenue & Orders Chart */}
             <div className="bg-white rounded-lg shadow-md p-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold text-gray-800">Doanh Thu & Đơn Hàng Theo Thời Gian</h3>
@@ -311,7 +381,7 @@ const FruitsAdminReport = () => {
                       cx="50%"
                       cy="50%"
                       outerRadius={90}
-                      label={({ percent }) => `${(percent * 100).toFixed(0)}%`}
+                      label={({ percent }) => `${((percent as number) * 100).toFixed(0)}%`}
                     >
                       {orderStatusCounts.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
@@ -334,7 +404,7 @@ const FruitsAdminReport = () => {
                       cx="50%"
                       cy="50%"
                       outerRadius={90}
-                      label={({ percent }) => `${(percent * 100).toFixed(0)}%`}
+                      label={({ percent }) => `${((percent as number) * 100).toFixed(0)}%`}
                     >
                       {revenueByPaymentMethod.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />

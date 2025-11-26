@@ -54,10 +54,13 @@ export interface RegisterData {
 }
 
 export interface AuthResponse {
-  user: AuthUser;
-  token: string;
-  refreshToken: string;
-  expiresIn: number;
+  success: boolean;
+  data: {
+    user: AuthUser;
+    token: string;
+    // refreshToken: string;
+    // expiresIn: number;
+  };
 }
 
 export interface ForgotPasswordData {

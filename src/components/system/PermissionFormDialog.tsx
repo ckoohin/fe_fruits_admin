@@ -13,7 +13,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
 import { Textarea } from '@/components/ui/Textarea';
-import { useToast } from '@/hooks/useToast';
+import toast from 'react-hot-toast';
 
 interface PermissionFormDialogProps {
   isOpen: boolean;
@@ -24,10 +24,10 @@ interface PermissionFormDialogProps {
 }
 
 interface Permission {
-  id: number;
+  id: string;
   name: string;
   slug: string;
-  description?: string;
+  description?: string | null;
 }
 
 export function PermissionFormDialog({
@@ -37,8 +37,6 @@ export function PermissionFormDialog({
   permission,
   isEditing = false,
 }: PermissionFormDialogProps) {
-  const { toast } = useToast();
-
   const [formData, setFormData] = useState({
     name: '',
     slug: '',
@@ -67,29 +65,20 @@ export function PermissionFormDialog({
 
   const handleSubmit = async () => {
     if (!formData.name.trim() || !formData.slug.trim()) {
-      toast({
-        title: 'Thiếu thông tin',
-        description: 'Vui lòng nhập đầy đủ tên và mã quyền',
-        variant: 'destructive',
-      });
+      toast.error('Vui lòng nhập đầy đủ tên và mã quyền');
       return;
     }
 
     try {
       await onSubmit(formData);
       onClose();
-      toast({
-        title: isEditing ? 'Cập nhật thành công' : 'Thêm quyền mới thành công',
-        description: isEditing
-          ? 'Thông tin quyền đã được cập nhật'
-          : 'Quyền mới đã được thêm vào hệ thống',
-      });
+      if (isEditing) {
+        toast.success('Quyền đã được cập nhật thành công');
+      } else {
+        toast.success('Quyền mới đã được thêm thành công');
+      }
     } catch (error) {
-      toast({
-        title: 'Lỗi',
-        description: 'Không thể lưu quyền, vui lòng thử lại',
-        variant: 'destructive',
-      });
+      toast.error('Đã có lỗi xảy ra khi lưu quyền');
     }
   };
 

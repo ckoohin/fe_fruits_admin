@@ -7,6 +7,7 @@ import { useImports } from '@/hooks/useImport';
 import { CreateImportRequest, ApproveImportRequest } from '@/types/import';
 import { AuthUtils } from '@/utils/auth';
 import { ApiHelper } from '@/utils/api';
+import toast from 'react-hot-toast';
 
 const useUserPermissions = () => {
   const [permissions, setPermissions] = useState<string[]>([]);
@@ -17,7 +18,7 @@ const useUserPermissions = () => {
       try {
         const user = AuthUtils.getUser();
         if (!user || !user.roleId) {
-          console.error('❌ User chưa login hoặc không có role');
+          console.error('User chưa login hoặc không có role');
           setPermissions([]);
           setLoading(false);
           return;
@@ -27,22 +28,22 @@ const useUserPermissions = () => {
         if (cachedPermissions && cachedPermissions.length > 0) {
           const slugs = cachedPermissions.map((p) => p.slug);
           setPermissions(slugs);
-          console.log('✅ Loaded permissions from cache:', slugs);
+          console.log('Loaded permissions from cache:', slugs);
         } else {
-          console.log('🔄 Fetching permissions for roleId:', user.roleId);
+          console.log('Fetching permissions for roleId:', user.roleId);
           const response = await ApiHelper.get(`api/v1/roles/${user.roleId}/permissions`);
           if (response.success && response.data) {
             AuthUtils.setPermissions(response.data);
             const slugs = response.data.map((p: any) => p.slug);
             setPermissions(slugs);
-            console.log('✅ Fetched permissions:', slugs);
+            console.log('Fetched permissions:', slugs);
           } else {
-            console.error('❌ Failed to fetch permissions:', response.message);
+            console.error('Failed to fetch permissions:', response.message);
             setPermissions([]);
           }
         }
       } catch (error) {
-        console.error('❌ Error loading permissions:', error);
+        console.error('Error loading permissions:', error);
         setPermissions([]);
       } finally {
         setLoading(false);
@@ -88,7 +89,7 @@ export default function ImportsPage() {
 
   const handleCreateImport = async (data: CreateImportRequest) => {
     if (!canRequest) {
-      alert('⚠️ Bạn không có quyền tạo yêu cầu nhập kho');
+      toast.error('Bạn không có quyền tạo yêu cầu nhập kho');
       return;
     }
     const success = await createImportRequest(data);
@@ -100,7 +101,7 @@ export default function ImportsPage() {
 
   const handleApprove = async (id: string, data: { supplier_id?: number; details: { id: number; import_quantity: number; import_price: number }[] }) => {
     if (!canApprove) {
-      alert('⚠️ Bạn không có quyền phê duyệt');
+      toast.error('Bạn không có quyền phê duyệt');
       return;
     }
     const approveData: ApproveImportRequest = {
@@ -117,10 +118,10 @@ export default function ImportsPage() {
 
   const handleReject = async (id: string, reason: string) => {
     if (!canApprove) {
-      alert('⚠️ Bạn không có quyền từ chối');
+      toast.error('Bạn không có quyền từ chối');
       return;
     }
-    const success = await reviewImport(id, { action: 'reject', reason });
+    const success = await reviewImport(id, { action: 'reject', note: reason });
     if (success) {
       closeDetailModal();
       fetchImports();
@@ -129,10 +130,10 @@ export default function ImportsPage() {
 
   const handleCancel = async (id: string, reason: string) => {
     if (!canApprove) {
-      alert('⚠️ Bạn không có quyền hủy');
+      toast.error('Bạn không có quyền hủy');
       return;
     }
-    const success = await reviewImport(id, { action: 'cancel', reason });
+    const success = await reviewImport(id, { action: 'cancel', note: reason });
     if (success) {
       closeDetailModal();
       fetchImports();
@@ -141,7 +142,7 @@ export default function ImportsPage() {
 
   const handleConfirmPayment = async (id: string) => {
     if (!canManagePayment) {
-      alert('⚠️ Bạn không có quyền xác nhận thanh toán');
+      toast.error('Bạn không có quyền xác nhận thanh toán');
       return;
     }
     const success = await confirmPayment(id);
@@ -153,7 +154,7 @@ export default function ImportsPage() {
 
   const handleConfirmReceive = async (id: string) => {
     if (!canReceive) {
-      alert('⚠️ Bạn không có quyền xác nhận nhận hàng');
+      toast.error('Bạn không có quyền xác nhận nhận hàng');
       return;
     }
     const success = await confirmReceive(id);

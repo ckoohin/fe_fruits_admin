@@ -1,280 +1,272 @@
 'use client';
-
-import { useState, useEffect, useCallback } from 'react';
-import { Plus, Download, Search } from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import ProductTable from '@/components/products/ProductTable';
-import { adminApi } from '@/lib/adminApi';
-import { Product, Category, ProductVariant, Unit } from '@/types/product';
+import React, { useState } from 'react';
+import toast from 'react-hot-toast';
+import ProductHeader, { ProductTable } from '@/components/products/ProductLayout';
+import ProductModal from '@/components/products/ProductModal';
+import ProductDetailModal from '@/components/products/ProductDetailModel';
+import { useProducts } from '@/hooks/useProducts';
+import { Product, CreateProductRequest, Category, Unit, ProductImageStructure } from '@/types/product';
 
 export default function ProductsPage() {
-  const router = useRouter();
+  const {
+    products,
+    categories,
+    units,
+    loading,
+    currentPage,
+    searchQuery,
+    filteredProducts,
+    currentProducts,
+    totalPages,
+    totalItems,
+    itemsPerPage,
+    xlsxLoaded,
+    setSearchQuery,
+    fetchData,
+    setCurrentPage,
+    deleteProduct,
+    createProduct,
+    updateProduct,
+    handleExportExcel,
+    handleImportExcel
+  } = useProducts();
 
-  const [products, setProducts] = useState<Product[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [units, setUnits] = useState<Unit[]>([]);
-  const [variants, setVariants] = useState<ProductVariant[]>([]);
-  const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null);
+  const [showModal, setShowModal] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [detailProductId, setDetailProductId] = useState<string | null>(null);
 
-  const [loading, setLoading] = useState(false);
-  const [variantsLoading, setVariantsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [submitting, setSubmitting] = useState(false);
+  const [formData, setFormData] = useState<CreateProductRequest>({
+    name: '',
+    slug: '',
+    category_id: 0,
+    unit_id: 0,
+    price: 0,
+    stock_quantity: 0,
+    short_description: '',
+    description: '',
+    origin: 'Việt Nam',
+    is_active: true,
+    is_featured: false,
+    images: { thumbnail: '', gallery: [] } 
+  });
 
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [searchTerm, setSearchTerm] = useState('');
+  const resetForm = () => {
+    setEditingProduct(null);
+    setFormData({
+      name: '',
+      slug: '',
+      category_id: 0,
+      unit_id: 0,
+      price: 0,
+      stock_quantity: 0,
+      short_description: '',
+      description: '',
+      origin: 'Việt Nam',
+      is_active: true,
+      is_featured: false,
+      images: { thumbnail: '', gallery: [] } 
+    });
+  };
 
-  // === LOAD PRODUCTS ===
-  const loadProducts = useCallback(async (params?: { page?: number; search?: string }) => {
-    try {
-      setLoading(true);
-      setError(null);
-      const response = await adminApi.getProducts({
-        page: params?.page || 1,
-        limit: 10,
-        search: params?.search || ''
-      });
-      console.log("Data",response); 
-      setProducts(response.data || []); 
-      setCurrentPage(response.pagination?.currentPage || 1);
-      setTotalPages(response.pagination?.totalPages || 1);
-    } catch (err: any) {
-      console.error('Load products error:', err);
-      setError(err.message || 'Không thể tải danh sách sản phẩm');
-      setProducts([]);
-    } finally {
-      setLoading(false);
+  const handleEdit = (product: Product) => {
+    setEditingProduct(product);
+
+    let imagesData: ProductImageStructure = { thumbnail: '', gallery: [] };
+
+    if (product.images) {
+      if (Array.isArray(product.images)) {
+        console.warn("Product images are in old array format, converting..."); 
+        imagesData.thumbnail = product.images[0] || '';
+        imagesData.gallery = product.images.slice(1);
+      }
+      else if (typeof product.images === 'object' && product.images !== null) {
+        imagesData.thumbnail = product.images.thumbnail || '';
+        imagesData.gallery = product.images.gallery || [];
+      }
     }
-  }, []);
 
-  // === LOAD CATEGORIES & UNITS ===
-  const loadCategories = useCallback(async () => {
-    try {
-      const response = await adminApi.getCategories();
-      setCategories(response.data || []);
-    } catch (err) {
-      console.error('Load categories error:', err);
-    }
-  }, []);
+    setFormData({
+      name: product.name,
+      slug: product.slug,
+      category_id: typeof product.category_id === 'string' ? parseInt(product.category_id, 10) : product.category_id,
+      unit_id: typeof product.unit_id === 'string' ? parseInt(product.unit_id, 10) : product.unit_id,
+      price: typeof product.price === 'string' ? parseFloat(product.price) : product.price,
+      stock_quantity: product.stock_quantity,
+      short_description: product.short_description || '', 
+      description: product.description || '',
+      origin: product.origin || 'Việt Nam',
+      is_active: product.is_active,
+      is_featured: product.is_featured,
+      images: imagesData, 
+      compare_price: product.compare_price ? parseFloat(product.compare_price) : undefined,
+      cost_price: product.cost_price ? parseFloat(product.cost_price) : undefined,
+      weight: product.weight || '', 
+      is_fresh: product.is_fresh,
+      shelf_life_days: product.shelf_life_days || 0, 
+      storage_conditions: product.storage_conditions || '', 
+      harvest_season: product.harvest_season || '',
+      organic_certified: product.organic_certified,
+      specifications: product.specifications
+    });
+    setShowModal(true);
+  };
 
-  const loadUnits = useCallback(async () => {
-    try {
-      const response = await adminApi.getUnits();
-      setUnits(response.data || []);
-    } catch (err) {
-      console.error('Load units error:', err);
-    }
-  }, []);
-
-  // === INITIAL LOAD ===
-  useEffect(() => {
-    loadProducts({ page: 1 });
-    loadCategories();
-    loadUnits();
-  }, [loadProducts, loadCategories, loadUnits]);
-
-  // === SEARCH ===
-  const handleSearch = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await loadProducts({ search: searchTerm, page: 1 });
-  };
 
-  // === DELETE PRODUCT ===
-  const handleDelete = async (id: string) => {
-    if (!confirm('Bạn có chắc muốn xóa sản phẩm này?')) return;
+    if (!formData.category_id || !formData.unit_id) {
+      toast.error('Vui lòng chọn danh mục và đơn vị');
+      return;
+    }
 
-    try {
-      await adminApi.deleteProduct(id);
-      alert('Xóa sản phẩm thành công');
-      await loadProducts({ page: currentPage, search: searchTerm });
-    } catch (err) {
-      console.error('Delete error:', err);
-      alert('Có lỗi xảy ra khi xóa sản phẩm');
+    const cleanData: CreateProductRequest = {
+      ...formData,
+      price: formData.price ? parseFloat(formData.price as any) : 0,
+      stock_quantity: formData.stock_quantity ? parseInt(formData.stock_quantity as any, 10) : 0,
+      compare_price: formData.compare_price 
+        ? parseFloat(formData.compare_price as any) 
+        : undefined,
+      images: formData.images || { thumbnail: '', gallery: [] },
+    };
+
+    if (isNaN(cleanData.price) || cleanData.price < 0) {
+      toast.error('Giá bán phải là số dương');
+      return;
+    }
+    if (isNaN(cleanData.stock_quantity) || cleanData.stock_quantity < 0) {
+      toast.error('Tồn kho phải là số nguyên không âm');
+      return;
+    }
+
+    const success = editingProduct
+      ? await updateProduct(editingProduct.id, cleanData)
+      : await createProduct(cleanData);
+
+    if (success) {
+      setShowModal(false);
+      resetForm();
     }
   };
 
-  // === BULK ACTION ===
-  const handleBulkAction = async (action: string) => {
-    if (selectedIds.length === 0) return;
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    const { name, value, type } = e.target;
+    const checked = (e.target as HTMLInputElement).checked; 
 
-    if (!confirm(`Bạn có chắc muốn ${action === 'delete' ? 'xóa' : 'thực hiện'} ${selectedIds.length} sản phẩm?`)) return;
-
-    try {
-      await adminApi.bulkAction(selectedIds, action);
-      alert('Thao tác thành công');
-      setSelectedIds([]);
-      await loadProducts({ page: currentPage });
-    } catch (err) {
-      console.error('Bulk action error:', err);
-      alert('Có lỗi xảy ra khi thực hiện thao tác');
-    }
+    setFormData(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : type === 'number' ? parseFloat(value) || 0 : value
+    }));
   };
 
-  // === EXPORT EXCEL ===
-  const handleExportExcel = async () => {
-    try {
-      const blob = await adminApi.exportProducts();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `products_${new Date().toISOString()}.xlsx`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      window.URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error('Export error:', error);
-      alert('Có lỗi xảy ra khi xuất file Excel');
-    }
+  const handleThumbnailChange = (url: string) => {
+    setFormData(prev => {
+      const currentImages = (prev.images && typeof prev.images === 'object' && !Array.isArray(prev.images))
+                             ? prev.images
+                             : { thumbnail: '', gallery: [] };
+      return {
+        ...prev,
+        images: {
+          ...(currentImages as ProductImageStructure), 
+          thumbnail: url
+        }
+      };
+    });
   };
 
-  // === PAGINATION ===
-  const handlePageChange = async (page: number) => {
-    if (page >= 1 && page <= totalPages) {
-      await loadProducts({ page, search: searchTerm });
-    }
+  const handleGalleryChange = (urls: string[]) => {
+    setFormData(prev => {
+      const currentImages = (prev.images && typeof prev.images === 'object' && !Array.isArray(prev.images))
+                             ? prev.images
+                             : { thumbnail: '', gallery: [] };
+      return {
+        ...prev,
+        images: {
+          ...(currentImages as ProductImageStructure), 
+          gallery: urls
+        }
+      };
+    });
   };
 
-  // === IMPORT EXCEL ===
-  const handleImportExcel = async () => {
-    alert('Chức năng nhập Excel đang được phát triển.');
+  const handleRowClick = (product: Product) => {
+    setDetailProductId(product.id != null ? String(product.id) : null);
+    setShowDetailModal(true);
   };
 
   return (
-    <div className="container mx-auto px-4">
-      <div className="bg-white rounded-lg shadow">
-        {/* HEADER */}
-        <div className="p-6 border-b border-gray-200">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold">Danh sách sản phẩm</h2>
+    <div className="space-y-6">
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+        <ProductHeader
+          totalCount={totalItems}
+          filteredCount={totalItems}
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          onImport={handleImportExcel}
+          onExport={handleExportExcel}
+          onAdd={() => {
+            resetForm();
+            setShowModal(true);
+          }}
+          xlsxLoaded={xlsxLoaded}
+        />
+
+        <ProductTable
+          products={currentProducts}
+          loading={loading}
+          onEdit={handleEdit}
+          onDelete={deleteProduct}
+          onRowClick={handleRowClick}
+        />
+
+        {/* Pagination */}
+        <div className="p-4 flex justify-between items-center border-t border-gray-200 bg-gray-50">
+          <span className="text-sm text-gray-600 font-medium">
+  {searchQuery 
+    ? `Tìm thấy ${totalItems} sản phẩm` 
+    : `Tổng: ${totalItems} sản phẩm`}
+
+  {" "} • Trang {currentPage} / {totalPages}
+</span>
+          <div className="flex items-center space-x-2">
+            <button onClick={() => setCurrentPage(currentPage - 1)} disabled={currentPage === 1} className="p-2 border border-gray-300 rounded-lg hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-all">
+              <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+            </button>
+            <div className="flex items-center space-x-1">
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                <button key={page} onClick={() => setCurrentPage(page)} className={`min-w-[40px] px-3 py-2 rounded-lg text-sm font-medium ${currentPage === page ? 'bg-emerald-600 text-white shadow-sm' : 'text-gray-700 hover:bg-white'}`}>{page}</button>
+              ))}
+            </div>
+            <button onClick={() => setCurrentPage(currentPage + 1)} disabled={currentPage === totalPages} className="p-2 border border-gray-300 rounded-lg hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-all">
+              <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+            </button>
           </div>
-
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => router.push('/admin/products/create')}
-                className="flex items-center gap-2 px-4 py-2.5 bg-[#B5DEFF] text-[#2e0cd6] rounded-lg hover:bg-[#A5D4F8] transition-colors"
-              >
-                <Plus className="w-5 h-5" />
-                <span className="font-medium">Thêm sản phẩm</span>
-              </button>
-
-              <button
-                onClick={handleExportExcel}
-                className="flex items-center gap-2 px-4 py-2.5 bg-[#B5DEFF] text-[#2e0cd6] rounded-lg hover:bg-[#A5D4F8] transition-colors"
-              >
-                <span className="font-medium">📊 Xuất Excel</span>
-              </button>
-
-              <button
-                onClick={handleImportExcel}
-                className="flex items-center gap-2 px-4 py-2.5 bg-[#B5DEFF] text-[#2e0cd6] rounded-lg hover:bg-[#A5D4F8] transition-colors"
-              >
-                <Download className="w-5 h-5" />
-                <span className="font-medium">Nhập Excel</span>
-              </button>
-            </div>
-
-            <form onSubmit={handleSearch} className="flex-1 max-w-md">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
-                <input
-                  type="text"
-                  placeholder="Tìm kiếm sản phẩm..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-            </form>
-          </div>
-        </div>
-
-        {/* CONTENT */}
-        <div>
-          {loading ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-            </div>
-          ) : error ? (
-            <div className="p-8 text-center">
-              <p className="text-red-600">{error}</p>
-              <button
-                onClick={() => loadProducts({ page: 1 })}
-                className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-              >
-                Thử lại
-              </button>
-            </div>
-          ) : (
-            <>
-              <ProductTable
-                products={products}
-                onDelete={handleDelete}
-                onBulkAction={handleBulkAction}
-                selectedIds={selectedIds}
-                setSelectedIds={setSelectedIds}
-              />
-
-              {totalPages > 1 && (
-                <div className="p-4 border-t border-gray-200 flex flex-col sm:flex-row items-center justify-between gap-4">
-                  <div className="text-sm text-gray-600">
-                    Trang <strong>{currentPage}</strong> / {totalPages}
-                  </div>
-
-                  <div className="flex flex-wrap items-center gap-2">
-                    <button
-                      onClick={() => handlePageChange(currentPage - 1)}
-                      disabled={currentPage === 1}
-                      className="px-3 py-1.5 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      Trước
-                    </button>
-
-                    {Array.from({ length: totalPages }, (_, i) => i + 1)
-                      .filter(
-                        (pageNum) =>
-                          pageNum === 1 ||
-                          pageNum === totalPages ||
-                          (pageNum >= currentPage - 2 && pageNum <= currentPage + 2)
-                      )
-                      .map((pageNum, idx, arr) => {
-                        const prev = arr[idx - 1];
-                        const showDots = prev && pageNum - prev > 1;
-                        return (
-                          <span key={pageNum} className="flex items-center">
-                            {showDots && <span className="px-2 text-gray-400">...</span>}
-                            <button
-                              onClick={() => handlePageChange(pageNum)}
-                              className={`px-3 py-1 rounded-lg transition-colors ${
-                                currentPage === pageNum
-                                  ? 'bg-[#211C84] text-[#ffffff] font-medium'
-                                  : 'border border-gray-300 hover:bg-gray-100 text-gray-900'
-                              }`}
-                            >
-                              {pageNum}
-                            </button>
-                          </span>
-                        );
-                      })}
-
-                    <button
-                      onClick={() => handlePageChange(currentPage + 1)}
-                      disabled={currentPage === totalPages}
-                      className="px-3 py-1.5 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      Sau
-                    </button>
-                  </div>
-                </div>
-              )}
-            </>
-          )}
         </div>
       </div>
+
+      <ProductModal
+        showModal={showModal}
+        editingProduct={editingProduct}
+        formData={formData}
+        categories={categories}
+        units={units}
+        onClose={() => {
+          setShowModal(false);
+          resetForm();
+        }}
+        onSubmit={handleSubmit}
+        onInputChange={handleInputChange}
+        onThumbnailChange={handleThumbnailChange}
+        onGalleryChange={handleGalleryChange}
+      />
+
+      <ProductDetailModal
+        productId={detailProductId}
+        isOpen={showDetailModal}
+        onClose={() => setShowDetailModal(false)}
+        onEdit={handleEdit}
+        onDelete={deleteProduct}
+      />
     </div>
   );
 }

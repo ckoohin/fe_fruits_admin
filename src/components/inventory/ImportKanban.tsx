@@ -16,10 +16,9 @@ export default function ImportKanbanBoard({
   onCardClick,
   getImportsByStatus,
 }: ImportKanbanBoardProps) {
-  const [selectedMonth, setSelectedMonth] = useState<number | null>(null); // Tháng (1-12) hoặc null để không lọc
-  const [selectedYear, setSelectedYear] = useState<number | null>(null); // Năm hoặc null để không lọc
+  const [selectedMonth, setSelectedMonth] = useState<number | null>(null); 
+  const [selectedYear, setSelectedYear] = useState<number | null>(null); 
 
-  // Lọc imports theo tháng và năm
   const filterImportsByDate = (imports: Import[]) => {
     if (!selectedMonth && !selectedYear) return imports;
 
@@ -46,7 +45,6 @@ export default function ImportKanbanBoard({
 
   return (
     <div className="px-6 py-4">
-      {/* Bộ lọc theo tháng và năm */}
       <div className="mb-4 flex gap-4">
         <select
           value={selectedMonth || ''}

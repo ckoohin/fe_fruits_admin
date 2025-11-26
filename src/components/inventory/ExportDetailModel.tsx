@@ -1,6 +1,7 @@
 'use client';
 import React, { useState } from 'react';
 import { Export, ReviewBranchRequest, ReviewWarehouseRequest } from '@/types/export';
+import toast from 'react-hot-toast';
 
 interface ExportDetailModalProps {
   show: boolean;
@@ -95,7 +96,7 @@ export default function ExportDetailModal({
 
   const handleCancelSubmit = async () => {
     if (!reason.trim()) {
-      alert('Vui lòng nhập lý do hủy');
+      toast.error('Vui lòng nhập lý do hủy');
       return;
     }
     setShowReasonModal(false);
@@ -111,7 +112,6 @@ export default function ExportDetailModal({
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-xl w-full max-w-4xl max-h-[90vh] overflow-hidden shadow-2xl">
-        {/* Header */}
         <div className="bg-gradient-to-r from-emerald-600 to-emerald-700 text-white p-6">
           <div className="flex justify-between items-start">
             <div>
@@ -135,9 +135,7 @@ export default function ExportDetailModal({
           </div>
         </div>
 
-        {/* Body */}
         <div className="p-6 overflow-y-auto max-h-[calc(90vh-200px)] space-y-6">
-          {/* General Info */}
           <div className="grid grid-cols-2 gap-4">
             <InfoCard label="Ngày xuất" value={formatDate(exportItem.export_date)} />
             <InfoCard label="Tổng số lượng" value={`${exportItem.total_quantity} sản phẩm`} />

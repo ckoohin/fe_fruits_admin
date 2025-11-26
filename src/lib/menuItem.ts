@@ -5,15 +5,17 @@ import {
   Package,
   ShoppingCart,
   BarChart3,
+  Gift,
   Settings,
   Warehouse,
+  FileText,
 } from 'lucide-react';
 
 export interface MenuItem {
   id: string;
   label: string;
-  href?: string;
-  icon: React.ReactNode;
+  href: string;
+  icon?: React.ComponentType<React.SVGProps<SVGSVGElement>>;
   requiredPermissions?: string[];
   requireAll?: boolean;
   alwaysShow?: boolean;
@@ -38,9 +40,9 @@ export const getMenuItems = (): MenuItem[] => [
   },
   {
     id: 'system-management',
-    label: 'Quản trị hệ thống',
+    label: 'Quản lý tài khoản',
     href: '/admin/system',
-    icon: null,
+    icon: Users,
     requiredPermissions: ['manage-users', 'manage-roles', 'manage-permissions'],
     requireAll: false,
     submenu: [
@@ -84,6 +86,7 @@ export const getMenuItems = (): MenuItem[] => [
   {
     id: 'inventory',
     label: 'Quản lý kho',
+    href: '/admin/inventory',
     icon: Warehouse,
     requiredPermissions: [],
     requireAll: false,
@@ -153,14 +156,15 @@ export const getMenuItems = (): MenuItem[] => [
   {
     id: 'content',
     label: 'Quản lý nội dung',
-    icon: null,
+    href: '/admin/post_categories',
+    icon: FileText,
     requiredPermissions: ['manage-blog'],
     requireAll: false,
     submenu: [
       {
         id: 'post-categories',
         label: 'Quản lý danh mục bài viết',
-        href: '/admin/categories/post',
+        href: '/admin/post_categories',
         requiredPermissions: ['manage-blog','manage-categories'],
       },
       {
@@ -187,12 +191,13 @@ export const getMenuItems = (): MenuItem[] => [
     id: 'promotions',
     label: 'Quản lý khuyến mãi',
     href: '/admin/coupons',
-    icon: ShoppingCart,
+    icon: Gift,
     requiredPermissions: ['manage-coupons'],
   },
   {
     id: 'settings',
     label: 'Cài đặt hệ thống',
+    href: '/admin/branches',
     icon: Settings,
     requiredPermissions: ['manage-branches', 'manage-suppliers', 'manage-categories'],
     requireAll: false,

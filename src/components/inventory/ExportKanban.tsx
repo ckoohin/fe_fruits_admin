@@ -16,15 +16,13 @@ export default function ExportKanbanBoard({
   onCardClick,
   getExportsByStatus,
 }: ExportKanbanBoardProps) {
-  const [selectedMonth, setSelectedMonth] = useState<number | null>(null); // Tháng (1-12) hoặc null để không lọc
-  const [selectedYear, setSelectedYear] = useState<number | null>(null); // Năm hoặc null để không lọc
+  const [selectedMonth, setSelectedMonth] = useState<number | null>(null); 
+  const [selectedYear, setSelectedYear] = useState<number | null>(null); 
 
-  // Lọc exports theo tháng và năm
   const filterExportsByDate = (exports: Export[]) => {
     if (!selectedMonth && !selectedYear) return exports;
 
     return exports.filter((exp) => {
-      // Kiểm tra null hoặc undefined trước khi tạo Date
       if (!exp.requested_at) return false;
       const exportDate = new Date(exp.requested_at);
       if (isNaN(exportDate.getTime())) return false; // Bỏ qua nếu ngày không hợp lệ
@@ -49,7 +47,6 @@ export default function ExportKanbanBoard({
 
   return (
     <div className="px-6 py-4">
-      {/* Bộ lọc theo tháng và năm */}
       <div className="mb-4 flex gap-4">
         <select
           value={selectedMonth || ''}
@@ -96,7 +93,7 @@ export default function ExportKanbanBoard({
             } else if (column.id === 'cancelled') {
               return exp.status === 'cancelled' && exp.type === 3;
             }
-            return false; // Trường hợp không khớp
+            return false; 
           });
 
           return (

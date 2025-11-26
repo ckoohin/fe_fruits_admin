@@ -5,7 +5,6 @@ export { Badge } from './Badge';
 export { Modal } from './Modal';
 export { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from './Table';
 export { SimpleTable } from './SimpleTable';
-export { Select } from './Select';
 export { Loading, LoadingSpinner, LoadingPage } from './Loading';
 
 export type { ButtonProps } from './Button';
@@ -14,5 +13,5 @@ export type { CardProps, CardHeaderProps, CardTitleProps, CardDescriptionProps, 
 export type { BadgeProps } from './Badge';
 export type { ModalProps } from './Modal';
 export type { TableProps, TableHeaderProps, TableBodyProps, TableRowProps, TableHeadProps, TableCellProps } from './Table';
-export type { SelectProps, SelectOption } from './Select';
+export type { Select, SelectTrigger,SelectValue,SelectContent, SelectItem, } from './Select';
 export type { LoadingProps, LoadingSpinnerProps, LoadingPageProps } from './Loading';

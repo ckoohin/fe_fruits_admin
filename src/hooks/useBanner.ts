@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { ApiHelper } from '@/utils/api';
 import { AuthUtils } from '@/utils/auth';
 import { Banner, CreateBannerRequest } from '@/types/banner';
+import toast from 'react-hot-toast';
 
 declare global {
   interface Window {
@@ -33,74 +34,66 @@ export function useBanners() {
     setLoading(true);
     try {
       if (!AuthUtils.isAuthenticated()) {
-        alert('Vui lòng đăng nhập');
+        toast.error('Vui lòng đăng nhập');
         window.location.href = '/login';
         return;
       }
       
-      // ✅ Sửa: Thêm /manage
       const response = await ApiHelper.get<Banner[]>('api/v1/banners/manage');
       
       if (response.success && response.data) {
         setBanners(Array.isArray(response.data) ? response.data : []);
       } else {
-        alert(response.message || 'Không thể tải dữ liệu banner');
+        toast.error(response.message || 'Không thể tải dữ liệu banner');
       }
     } catch (error) {
       console.error('Error fetching banners:', error);
-      alert('Lỗi khi tải banner');
+      toast.error('Lỗi khi tải banner');
     } finally {
       setLoading(false);
     }
   };
 
-  // Delete banner
   const deleteBanner = async (banner: Banner) => {
     if (!banner || !banner.id) {
-      alert('Dữ liệu banner không hợp lệ');
+      toast.error('Dữ liệu banner không hợp lệ');
       return;
     }
     
     if (!confirm(`Bạn có chắc muốn xóa banner "${banner.title}"?`)) return;
 
     try {
-      // ✅ Sửa: Thêm /manage
       const response = await ApiHelper.delete(`api/v1/banners/manage/${banner.id}`);
       if (response.success) {
-        alert('Xóa banner thành công!');
+       toast.success('Xóa banner thành công!');
         fetchBanners();
       } else {
-        alert('Lỗi: ' + (response.message || 'Không thể xóa banner'));
+        toast.error('Lỗi: ' + (response.message || 'Không thể xóa banner'));
       }
     } catch (error: any) {
       console.error('Delete error:', error);
-      alert('Lỗi: ' + error.message);
+      toast.error('Lỗi: ' + error.message);
     }
   };
 
   
   const createBanner = async (data: CreateBannerRequest) => {
     try {
-      console.log('=== CREATE BANNER ===');
-      console.log('Data:', data);
-      
-      // ✅ Sửa: Thêm /manage
       const response = await ApiHelper.post('api/v1/banners/manage', data);
       if (response.success) {
-        alert('Thêm banner thành công!');
+        toast.success('Thêm banner thành công!');
         fetchBanners();
         return true;
       }
-      alert('Lỗi: ' + (response.message || 'Không thể lưu banner'));
+      toast.error('Lỗi: ' + (response.message || 'Không thể lưu banner'));
       return false;
     } catch (error: any) {
       console.error('Create error:', error);
-      alert('Lỗi: ' + error.message);
+      toast.error('Lỗi: ' + error.message);
       return false;
     }
   };
 
-  // Update banner
   const updateBanner = async (id: string, data: CreateBannerRequest) => {
     try {
       const updateData: any = {
@@ -122,29 +115,24 @@ export function useBanners() {
         updateData.end_date = data.end_date;
       }
       
-      console.log('=== UPDATE BANNER ===');
-      console.log('ID:', id);
-      console.log('Data:', updateData);
-      
       const response = await ApiHelper.patch(`api/v1/banners/manage/${id}`, updateData);
       if (response.success) {
-        alert('Cập nhật thành công!');
+        toast.success('Cập nhật thành công!');
         fetchBanners();
         return true;
       }
-      alert('Lỗi: ' + (response.message || 'Không thể lưu banner'));
+      toast.error('Lỗi: ' + (response.message || 'Không thể lưu banner'));
       return false;
     } catch (error: any) {
       console.error('Update error:', error);
-      alert('Lỗi: ' + error.message);
+      toast.error('Lỗi: ' + error.message);
       return false;
     }
   };
 
-  // Export to Excel
   const handleExportExcel = () => {
     if (!window.XLSX) {
-      alert('Đang tải thư viện Excel, vui lòng thử lại sau giây lát...');
+      toast.loading('Đang tải thư viện Excel, vui lòng thử lại sau giây lát...');
       return;
     }
 
@@ -187,13 +175,12 @@ export function useBanners() {
     window.XLSX.writeFile(workbook, fileName);
   };
 
-  // Import from Excel
   const handleImportExcel = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     if (!window.XLSX) {
-      alert('Đang tải thư viện Excel, vui lòng thử lại sau giây lát...');
+      toast.loading('Đang tải thư viện Excel, vui lòng thử lại sau giây lát...');
       return;
     }
 
@@ -206,12 +193,11 @@ export function useBanners() {
         const jsonData = window.XLSX.utils.sheet_to_json(firstSheet);
         
         if (jsonData.length === 0) {
-          alert('File Excel trống hoặc không có dữ liệu');
+          toast.error('File Excel trống hoặc không có dữ liệu');
           return;
         }
         
         const importedBanners = jsonData.map((row: any) => {
-          // ✅ Sửa: Map từ label sang value
           const positionMap: { [key: string]: string } = {
             'Trang chủ - Chính': 'homepage-main',
             'Trang chủ - Sidebar': 'homepage-sidebar',
@@ -240,7 +226,6 @@ export function useBanners() {
 
         for (const banner of importedBanners) {
           try {
-            // ✅ Sửa: Thêm /manage
             const response = await ApiHelper.post('api/v1/banners/manage', banner);
             if (response.success) {
               successCount++;
@@ -259,7 +244,7 @@ export function useBanners() {
 
       } catch (error) {
         console.error('Error importing file:', error);
-        alert('Lỗi khi đọc file Excel. Vui lòng kiểm tra lại định dạng file.');
+        toast.error('Lỗi khi đọc file Excel. Vui lòng kiểm tra lại định dạng file.');
       }
     };
     

@@ -68,9 +68,12 @@ export function useAdminAuth() {
           name: apiUserData.name || 'Khách',
           email: apiUserData.email,
           userType: Number(apiUserData.user_type || 0),
-          roleId: Number(apiUserData.role_id || 0),
+          roleId: apiUserData.role_id ? String(apiUserData.role_id) : '',
           avatar: apiUserData.avatar || null,
           branchId: Number(apiUserData.branch_id || 0),
+          isActive: apiUserData.is_active ?? true, 
+          status: apiUserData.status || 'active',  
+          user_type: apiUserData.user_typets || 'default',
         };
 
         AuthUtils.setAuth(token, userData);
@@ -101,13 +104,21 @@ export function useAdminAuth() {
     return AuthUtils.hasPermission(slug);
   }, []);
 
+  const hasUserType = useCallback((type: string | number) => {
+    if (!user) return false;
+    const userTypeNum = Number(user.userType);
+    const requiredTypeNum = Number(type);
+    return userTypeNum === requiredTypeNum;
+  }, [user]);
+
   return {
     user,
-    loading,
+    isLoading: loading,
     isAuthenticated,
     error,
     login,
     logout,
     hasPermission,
+    hasUserType
   };
 }

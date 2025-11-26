@@ -8,12 +8,12 @@ export interface User {
   created_at?: string;
   updated_at?: string;
   phone?: string;
-  roleId: number;
+  roleId: string;
   role_name?: string;
   isActive: boolean;
   status: number;
   user_type: number;
-  branchId: number;
+  branchId: number | null;
   lastLoginAt?: Date;
 }
 
@@ -27,7 +27,7 @@ export interface UserData {
   avatar?: string; 
   created_at?: string; 
   updated_at?: string; 
-  branch_id?: number;
+  branch_id?: number | null;
 }
 
 export interface CreateUserRequest {

@@ -24,7 +24,6 @@ export default function CustomersPage() {
   return (
     <div className="space-y-6">
       <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-        {/* Header giống Supplier */}
         <CustomerHeader
           totalCount={customers.length}
           filteredCount={filteredCustomers.length}
@@ -36,13 +35,11 @@ export default function CustomersPage() {
           xlsxLoaded={xlsxLoaded}
         />
 
-        {/* Bảng danh sách khách hàng */}
         <CustomerTable
           customers={currentCustomers}
           loading={loading}
         />
 
-        {/* Pagination */}
         <div className="p-4 flex justify-between items-center border-t border-gray-200 bg-gray-50">
           <span className="text-sm text-gray-600 font-medium">
             {searchQuery ? (
@@ -53,7 +50,6 @@ export default function CustomersPage() {
           </span>
 
           <div className="flex items-center space-x-2">
-            {/* Nút Trước */}
             <button
               onClick={() => setCurrentPage(currentPage - 1)}
               disabled={currentPage === 1}
@@ -64,7 +60,6 @@ export default function CustomersPage() {
               </svg>
             </button>
 
-            {/* Số trang */}
             <div className="flex items-center space-x-1">
               {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
                 <button
@@ -81,7 +76,6 @@ export default function CustomersPage() {
               ))}
             </div>
 
-            {/* Nút Sau */}
             <button
               onClick={() => setCurrentPage(currentPage + 1)}
               disabled={currentPage === totalPages || totalPages === 0}

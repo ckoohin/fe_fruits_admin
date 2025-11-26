@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { ApiHelper } from '@/utils/api';
 import { AuthUtils } from '@/utils/auth';
 import { Coupon, CreateCouponRequest } from '@/types/coupon';
+import toast from 'react-hot-toast';
 
 declare global {
   interface Window {
@@ -18,7 +19,6 @@ export function useCoupons() {
   const [xlsxLoaded, setXlsxLoaded] = useState(false);
   const itemsPerPage = 10;
 
-  // Load XLSX library
   useEffect(() => {
     if (typeof window !== 'undefined' && !window.XLSX) {
       const script = document.createElement('script');
@@ -30,12 +30,11 @@ export function useCoupons() {
     }
   }, []);
 
-  // Fetch coupons
   const fetchCoupons = async () => {
     setLoading(true);
     try {
       if (!AuthUtils.isAuthenticated()) {
-        alert('Vui lòng đăng nhập');
+        toast.error('Vui lòng đăng nhập');
         window.location.href = '/login';
         return;
       }
@@ -45,20 +44,19 @@ export function useCoupons() {
       if (response.success && response.data) {
         setCoupons(Array.isArray(response.data) ? response.data : []);
       } else {
-        alert(response.message || 'Không thể tải dữ liệu khuyến mãi');
+        toast.error(response.message || 'Không thể tải dữ liệu khuyến mãi');
       }
     } catch (error) {
       console.error('Error fetching coupons:', error);
-      alert('Lỗi khi tải khuyến mãi');
+      toast.error('Lỗi khi tải khuyến mãi');
     } finally {
       setLoading(false);
     }
   };
 
-  // Delete coupon
   const deleteCoupon = async (coupon: Coupon) => {
     if (!coupon || !coupon.id) {
-      alert('Dữ liệu khuyến mãi không hợp lệ');
+      toast.error('Dữ liệu khuyến mãi không hợp lệ');
       return;
     }
     
@@ -67,39 +65,34 @@ export function useCoupons() {
     try {
       const response = await ApiHelper.delete(`api/v1/coupons/${coupon.id}`);
       if (response.success) {
-        alert('Xóa mã khuyến mãi thành công!');
+        toast.success('Xóa mã khuyến mãi thành công!');
         fetchCoupons();
       } else {
-        alert('Lỗi: ' + (response.message || 'Không thể xóa mã khuyến mãi'));
+        toast.error('Lỗi: ' + (response.message || 'Không thể xóa mã khuyến mãi'));
       }
     } catch (error: any) {
       console.error('Delete error:', error);
-      alert('Lỗi: ' + error.message);
+      toast.error('Lỗi: ' + error.message);
     }
   };
 
-  // Create coupon
   const createCoupon = async (data: CreateCouponRequest) => {
     try {
-      console.log('=== CREATE COUPON ===');
-      console.log('Data:', data);
-      
       const response = await ApiHelper.post('api/v1/coupons', data);
       if (response.success) {
-        alert('Thêm mã khuyến mãi thành công!');
+        toast.success('Thêm mã khuyến mãi thành công!');
         fetchCoupons();
         return true;
       }
-      alert('Lỗi: ' + (response.message || 'Không thể lưu mã khuyến mãi'));
+      toast.error('Lỗi: ' + (response.message || 'Không thể lưu mã khuyến mãi'));
       return false;
     } catch (error: any) {
       console.error('Create error:', error);
-      alert('Lỗi: ' + error.message);
+      toast.error('Lỗi: ' + error.message);
       return false;
     }
   };
 
-  // Update coupon
   const updateCoupon = async (id: string, data: CreateCouponRequest) => {
     try {
       const updateData: any = {
@@ -126,23 +119,22 @@ export function useCoupons() {
       
       const response = await ApiHelper.patch(`api/v1/coupons/${id}`, updateData);
       if (response.success) {
-        alert('Cập nhật thành công!');
+        toast.success('Cập nhật thành công!');
         fetchCoupons();
         return true;
       }
-      alert('Lỗi: ' + (response.message || 'Không thể lưu mã khuyến mãi'));
+      toast.error('Lỗi: ' + (response.message || 'Không thể lưu mã khuyến mãi'));
       return false;
     } catch (error: any) {
       console.error('Update error:', error);
-      alert('Lỗi: ' + error.message);
+      toast.error('Lỗi: ' + error.message);
       return false;
     }
   };
 
-  // Export to Excel
   const handleExportExcel = () => {
     if (!window.XLSX) {
-      alert('Đang tải thư viện Excel, vui lòng thử lại sau giây lát...');
+      toast.loading('Đang tải thư viện Excel, vui lòng thử lại sau giây lát...');
       return;
     }
 
@@ -189,13 +181,12 @@ export function useCoupons() {
     window.XLSX.writeFile(workbook, fileName);
   };
 
-  // Import from Excel
   const handleImportExcel = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     if (!window.XLSX) {
-      alert('Đang tải thư viện Excel, vui lòng thử lại sau giây lát...');
+      toast.loading('Đang tải thư viện Excel, vui lòng thử lại sau giây lát...');
       return;
     }
 
@@ -208,7 +199,7 @@ export function useCoupons() {
         const jsonData = window.XLSX.utils.sheet_to_json(firstSheet);
         
         if (jsonData.length === 0) {
-          alert('File Excel trống hoặc không có dữ liệu');
+          toast.error('File Excel trống hoặc không có dữ liệu');
           return;
         }
         
@@ -255,7 +246,7 @@ export function useCoupons() {
 
       } catch (error) {
         console.error('Error importing file:', error);
-        alert('Lỗi khi đọc file Excel. Vui lòng kiểm tra lại định dạng file.');
+        toast.error('Lỗi khi đọc file Excel. Vui lòng kiểm tra lại định dạng file.');
       }
     };
     
@@ -263,7 +254,6 @@ export function useCoupons() {
     e.target.value = '';
   };
 
-  // Filter coupons based on search query
   const filteredCoupons = coupons.filter(coupon => {
     const query = searchQuery.toLowerCase().trim();
     if (!query) return true;
@@ -275,18 +265,15 @@ export function useCoupons() {
     );
   });
 
-  // Pagination
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentCoupons = filteredCoupons.slice(indexOfFirstItem, indexOfLastItem);
   const totalPages = Math.ceil(filteredCoupons.length / itemsPerPage);
 
-  // Reset page when search changes
   useEffect(() => {
     setCurrentPage(1);
   }, [searchQuery]);
 
-  // Fetch coupons on mount
   useEffect(() => {
     fetchCoupons();
   }, []);

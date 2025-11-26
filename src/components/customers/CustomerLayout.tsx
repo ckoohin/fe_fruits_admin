@@ -1,10 +1,8 @@
-// src/components/PageLayout/customers/CustomerHeader.tsx (Cập nhật)
 'use client';
 import React, { useRef } from 'react';
 import CustomTable from '@/components/ui/CustomTable';
 import { Customer } from '@/types/customer';
 
-// Thay đổi interface: Bỏ onAdd
 interface CustomerHeaderProps {
   totalCount: number;
   filteredCount: number;
@@ -12,7 +10,7 @@ interface CustomerHeaderProps {
   onSearchChange: (query: string) => void;
   onImport: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onExport: () => void;
-  onRefresh: () => void; // Thêm hàm làm mới (Refetch)
+  onRefresh: () => void;
   xlsxLoaded: boolean;
 }
 
@@ -23,7 +21,7 @@ export default function CustomerHeader({
   onSearchChange,
   onImport,
   onExport,
-  onRefresh, // Sử dụng hàm làm mới
+  onRefresh, 
   xlsxLoaded
 }: CustomerHeaderProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -33,13 +31,13 @@ return (
       <div className="flex items-center justify-between gap-6">
         <div>
           <h2 className="text-lg font-semibold text-gray-900">Danh sách khách hàng</h2>
-          {/* <p className="text-sm text-gray-500 mt-0.5">
+          <p className="text-sm text-gray-500 mt-0.5">
             {searchQuery ? (
-              <>Tìm thấy {filteredCount} / {totalCount} nhà cung cấp</>
+              <>Tìm thấy {filteredCount} / {totalCount} khách hàng</>
             ) : (
-              <>Tổng: {totalCount} nhà cung cấp</>
+              <>Tổng: {totalCount} khách hàng</>
             )}
-          </p> */}
+          </p>
         </div>
         
         <div className="flex items-center gap-3">
@@ -76,7 +74,7 @@ return (
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
             </svg>
-            <span>Import</span>
+            <span>Nhập Excel</span>
           </button>
 
           <button
@@ -88,35 +86,22 @@ return (
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
             </svg>
-            <span>Export</span>
+            <span>Xuất Excel</span>
           </button>
 
           <div className="h-9 w-px bg-gray-300"></div>
-
-          {/* <button
-            onClick={onAdd}
-            className="flex items-center gap-2 px-5 py-2.5 text-sm bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-all font-medium shadow-sm hover:shadow"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-            <span>Thêm NCC</span>
-          </button> */}
         </div>
       </div>
     </div>
   );
 }
 
-// --- CUSTOMER TABLE COMPONENT ---
 interface CustomerTableProps {
   customers: Customer[];
   loading: boolean;
-  // Bỏ onEdit và onDelete
 }
 
 export function CustomerTable({ customers, loading }: CustomerTableProps) {
-  // Bỏ hành động onEdit và onDelete khỏi Columns
   const columns = [
     { 
       key: 'id', 
@@ -197,7 +182,7 @@ export function CustomerTable({ customers, loading }: CustomerTableProps) {
       data={customers}
       loading={loading}
       searchable={false}
-      actionable={false} // Quan trọng: Tắt cột hành động
+      actionable={false} 
       emptyText="Chưa có khách hàng nào"
     />
   );

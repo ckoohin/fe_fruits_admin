@@ -179,7 +179,7 @@ class AdminAuth {
           permission_ids: data.data.permission_ids || [], 
         };
         this.saveToStorage();
-        return this.user;
+        return this.user!;
       }
 
       throw new AdminAuthError('Dữ liệu người dùng không hợp lệ');

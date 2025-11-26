@@ -38,7 +38,6 @@ export default function BranchModal({
         </div>
         
         <form onSubmit={onSubmit} className="space-y-4">
-          {/* Tên chi nhánh */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Tên chi nhánh <span className="text-red-500">*</span>
@@ -54,7 +53,6 @@ export default function BranchModal({
             />
           </div>
 
-          {/* Địa chỉ */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Địa chỉ <span className="text-red-500">*</span>
@@ -70,7 +68,6 @@ export default function BranchModal({
             />
           </div>
 
-          {/* Checkbox active */}
           <div className="flex items-center">
             <input
               type="checkbox"
@@ -85,7 +82,6 @@ export default function BranchModal({
             </label>
           </div>
 
-          {/* Buttons */}
           <div className="flex space-x-3 pt-4 border-t">
             <button
               type="button"

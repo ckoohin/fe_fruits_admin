@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Import } from '@/types/import';
 import { ApiHelper } from '@/utils/api';
+import toast from 'react-hot-toast';
 
 interface ImportDetailModalProps {
   show: boolean;
@@ -10,8 +11,8 @@ interface ImportDetailModalProps {
   onApprove?: (id: string, data: { supplier_id?: number; details: { id: number; import_quantity: number; import_price: number }[] }) => Promise<void>;
   onReject?: (id: string, reason: string) => Promise<void>;
   onCancel?: (id: string, reason: string) => Promise<void>;
-  onConfirmPayment?: (id: string) => Promise<void>; // Loại bỏ reason
-  onConfirmReceive?: (id: string) => Promise<void>; // Loại bỏ reason
+  onConfirmPayment?: (id: string) => Promise<void>; 
+  onConfirmReceive?: (id: string) => Promise<void>; 
   permissions: {
     canApprove: boolean;
     canManagePayment: boolean;
@@ -117,7 +118,7 @@ export default function ImportDetailModal({
 
   const handleReasonSubmit = async () => {
     if (!reason.trim()) {
-      alert('Vui lòng nhập lý do');
+      toast.error('Vui lòng nhập lý do');
       return;
     }
     setShowReasonModal(false);
@@ -130,7 +131,7 @@ export default function ImportDetailModal({
 
   const handleApprove = async () => {
     if (!approveData.supplier_id || approveData.details.some(d => d.import_price <= 0)) {
-      alert('Vui lòng chọn nhà cung cấp và nhập giá hợp lệ');
+      toast.error('Vui lòng chọn nhà cung cấp và nhập giá hợp lệ');
       return;
     }
     await onApprove?.(importItem.id, approveData);
@@ -150,7 +151,6 @@ export default function ImportDetailModal({
     setApproveData({ ...approveData, details: newDetails });
   };
 
-  // Điều chỉnh logic hiển thị nút dựa trên payment_status
   const showApproveSection = permissions.canApprove && importItem.status === 'requested';
   const showCancelSection = permissions.canApprove && importItem.status === 'requested';
   const showPaymentSection = permissions.canManagePayment && importItem.status === 'approved' && (importItem.payment_status === 'unpaid' || !importItem.payment_status);
@@ -159,7 +159,6 @@ export default function ImportDetailModal({
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-xl w-full max-w-4xl max-h-[90vh] overflow-hidden shadow-2xl">
-        {/* Header */}
         <div className="bg-gradient-to-r from-emerald-600 to-emerald-700 text-white p-6">
           <div className="flex justify-between items-start">
             <div>
@@ -180,9 +179,7 @@ export default function ImportDetailModal({
           </div>
         </div>
 
-        {/* Body */}
         <div className="p-6 overflow-y-auto max-h-[calc(90vh-200px)] space-y-6">
-          {/* General Info */}
           <div className="grid grid-cols-2 gap-4">
             <InfoCard label="Ngày nhập" value={formatDate(importItem.import_date)} />
             <InfoCard label="Nhà cung cấp" value={importItem.supplier_name || 'Chưa chọn'} />
@@ -192,7 +189,6 @@ export default function ImportDetailModal({
             <InfoCard label="Người phê duyệt" value={importItem.approved_by || 'Chưa có'} />
           </div>
 
-          {/* Note */}
           {importItem.note && (
             <div className="bg-amber-50 border-l-4 border-amber-400 p-4 rounded">
               <p className="text-sm font-semibold text-amber-800 mb-1">Ghi chú:</p>
@@ -200,7 +196,6 @@ export default function ImportDetailModal({
             </div>
           )}
 
-          {/* Rejection Reason */}
           {(importItem.status === 'rejected' || importItem.status === 'cancelled') && importItem.rejection_reason && (
             <div className="bg-red-50 border-l-4 border-red-400 p-4 rounded">
               <p className="text-sm font-semibold text-red-800 mb-1">Lý do {importItem.status === 'rejected' ? 'từ chối' : 'hủy'}:</p>
@@ -208,7 +203,6 @@ export default function ImportDetailModal({
             </div>
           )}
 
-          {/* Details Table */}
           {importItem.details && importItem.details.length > 0 && (
             <div>
               <h3 className="font-bold text-gray-900 mb-3 text-lg">Chi tiết sản phẩm</h3>
@@ -265,7 +259,6 @@ export default function ImportDetailModal({
             </div>
           )}
 
-          {/* Workflow 2: Phê duyệt */}
           {showApproveSection && (
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
               <h4 className="font-semibold text-blue-900 mb-3">🔐 Workflow 2: Phê duyệt yêu cầu</h4>
@@ -396,7 +389,6 @@ export default function ImportDetailModal({
           </div>
         )}
 
-        {/* Footer */}
         <div className="bg-gray-50 px-6 py-4 border-t border-gray-200">
           <button
             onClick={onClose}
